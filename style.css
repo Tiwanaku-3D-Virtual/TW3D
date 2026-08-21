@@ -1,0 +1,185 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1a1a1a;
+}
+
+#webgl-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+.ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Permitir clics solo en los elementos interactivos */
+.top-nav, .side-panel {
+    pointer-events: auto;
+}
+
+/* --- NAV SUPERIOR --- */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 3rem;
+    background: linear-gradient(to bottom, rgba(15, 15, 20, 0.9) 0%, rgba(15, 15, 20, 0) 100%);
+    color: white;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #e6c594;
+    letter-spacing: 2px;
+}
+
+.top-nav nav {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.top-nav nav a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.3s;
+}
+
+.top-nav nav a:hover {
+    color: #e6c594;
+}
+
+/* --- MENÚ DESPLEGABLE --- */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #16181d;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+    border-radius: 8px;
+    margin-top: 10px;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.dropdown-content a {
+    color: white;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 1rem;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
+}
+
+.dropdown-content a:hover {
+    background-color: #2a2c35;
+    color: #e6c594;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* --- PANEL LATERAL --- */
+.side-panel {
+    position: absolute;
+    top: 100px;
+    left: 40px;
+    width: 380px;
+    height: calc(100vh - 160px);
+    background: #16181d;
+    border-radius: 12px;
+    border-left: 4px solid #e6c594;
+    box-shadow: 10px 10px 30px rgba(0,0,0,0.6);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* Scrollbar personalizado para el panel */
+.side-panel::-webkit-scrollbar {
+    width: 6px;
+}
+.side-panel::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+}
+
+#panel-title {
+    color: #e6c594;
+    text-align: center;
+    padding: 25px 20px;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.img-placeholder {
+    width: calc(100% - 40px);
+    height: 220px;
+    margin: 0 auto 20px auto;
+    background: #2a2c35;
+    border-radius: 8px;
+    border: 1px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.text-content {
+    padding: 0 20px 30px 20px;
+    line-height: 1.6;
+    color: #ccc;
+    text-align: justify;
+}
+
+/* --- PÍLDORA INFERIOR --- */
+.interaction-hint {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #16181d;
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 30px;
+    border: 1px solid #e6c594;
+    font-size: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    pointer-events: none;
+}

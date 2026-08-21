@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiwanaku - Virtual Experience</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+          "gsap": "https://unpkg.com/gsap@3.12.5/index.js"
+        }
+      }
+    </script>
+</head>
+<body>
+    <div id="webgl-container"></div>
+
+    <main class="ui-layer">
+        <!-- Navegación Superior -->
+        <header class="top-nav">
+            <div class="logo">
+                <span class="logo-icon">🏛️</span> TIWANAKU VIRTUAL
+            </div>
+            <nav>
+                <a href="#">Inicio</a>
+                
+                <!-- Menú Desplegable -->
+                <div class="dropdown">
+                    <a href="#" class="dropbtn">Modelos ▾</a>
+                    <div class="dropdown-content">
+                        <a href="#" id="nav-sungate">Puerta del Sol</a>
+                        <a href="#" id="nav-monolito">Monolito Ponce</a>
+                        <a href="#" id="nav-chachapuma">Chachapuma</a>
+                        <a href="#" id="nav-piramide">Akapana</a>
+                    </div>
+                </div>
+                
+                <a href="#">Ubicación</a>
+            </nav>
+        </header>
+
+        <!-- Panel Lateral Izquierdo -->
+        <aside id="side-panel" class="side-panel">
+            <h1 id="panel-title">Puerta del Sol</h1>
+            
+            <!-- Espacio reservado para tu futura imagen -->
+            <div class="img-placeholder">
+                [Imagen del modelo aquí]
+            </div>
+            
+            <div class="text-content">
+                <p id="panel-desc">Este monumental portal lítico es uno de los íconos más importantes de Tiwanaku. Destaca el 'Señor de los Báculos' en su friso central, rodeado de figuras aladas.</p>
+            </div>
+        </aside>
+
+        <!-- Píldora inferior -->
+        <div class="interaction-hint">
+            Arrastra para girar el modelo
+        </div>
+    </main>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
