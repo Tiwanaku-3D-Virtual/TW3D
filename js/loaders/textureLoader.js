@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 const textureLoader = new THREE.TextureLoader();
 
-export function loadTexture(path, options = {}) {
+export function loadTexture(path, options = {}, onProgress = null) {
     return new Promise((resolve, reject) => {
         textureLoader.load(
             path,
@@ -17,8 +17,12 @@ export function loadTexture(path, options = {}) {
                 
                 resolve(texture);
             },
-            undefined,
+            (xhr) => {
+                if (onProgress && xhr.total > 0) {
+                    onProgress(xhr.loaded / xhr.total);
+                }
+            },
             (error) => reject(error)
         );
     });
-}
+}

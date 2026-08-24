@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const gltfLoader = new GLTFLoader();
 
-export function loadModel(path, options = {}) {
+export function loadModel(path, options = {}, onProgress = null) {
     return new Promise((resolve, reject) => {
         gltfLoader.load(
             path,
@@ -28,7 +28,15 @@ export function loadModel(path, options = {}) {
                 model.traverse(setupShadowsAndMaterials);
                 resolve(model);
             },
-            undefined,
+            (xhr) => {
+                if (onProgress) {
+                    if (xhr.total > 0) {
+                        onProgress(xhr.loaded / xhr.total, xhr.loaded, xhr.total);
+                    } else {
+                        onProgress(null, xhr.loaded, 0);
+                    }
+                }
+            },
             (error) => reject(error)
         );
     });
@@ -39,10 +47,17 @@ function setupShadowsAndMaterials(child) {
         child.castShadow = true;
         child.receiveShadow = true;
         
+        // Optimizar materiales
+        if (child.material) {
+            if (child.material.map) {
+                child.material.map.colorSpace = THREE.SRGBColorSpace;
+            }
+        }
+        
         // Evitar que el shader se rompa si la malla no tiene coordenadas UV
         if (!child.geometry.attributes.uv && child.material) {
             child.material.map = null;
             child.material.needsUpdate = true;
         }
     }
-}
+}

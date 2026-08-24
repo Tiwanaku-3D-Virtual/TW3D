@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiwanaku - Virtual Experience</title>
+    <title>Tiwanaku 3D - Experiencia Arqueológica Virtual</title>
+    <meta name="description" content="Explora el complejo arqueológico de Tiwanaku en 3D interactivo. Descubre la Puerta del Sol, el Monolito Ponce, el Chachapuma y la Pirámide de Akapana con detalles iconográficos y modos de iluminación.">
+    
+    <!-- Fuentes Google Fonts: Cinzel (Monumental) y Outfit (Moderna) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
     
     <script type="importmap">
@@ -17,51 +24,217 @@
     </script>
 </head>
 <body>
+    <!-- Pantalla de Carga Cinemática -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="chakana-loader">
+                <div class="chakana-cross"></div>
+                <div class="chakana-glow"></div>
+            </div>
+            <h2 class="loading-title">TIWANAKU VIRTUAL</h2>
+            <p class="loading-subtitle">PATRIMONIO DE LA HUMANIDAD · UNESCO</p>
+            <div class="loading-bar-container">
+                <div id="loading-progress-bar" class="loading-progress-bar"></div>
+            </div>
+            <div class="loading-info">
+                <span id="loading-status">Inicializando entorno lítico...</span>
+                <span id="loading-percentage">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor 3D WebGL -->
     <div id="webgl-container"></div>
 
+    <!-- Capa de Marcadores Hotspots 3D -->
+    <div id="hotspots-overlay" class="hotspots-overlay"></div>
+
+    <!-- Capa Principal de Interfaz de Usuario -->
     <main class="ui-layer">
         <!-- Navegación Superior -->
         <header class="top-nav">
-            <div class="logo">
-                <span class="logo-icon">🏛️</span> TIWANAKU VIRTUAL
-            </div>
-            <nav>
-                <a href="#">Inicio</a>
-                
-                <!-- Menú Desplegable -->
-                <div class="dropdown">
-                    <a href="#" class="dropbtn">Modelos ▾</a>
-                    <div class="dropdown-content">
-                        <a href="#" id="nav-sungate">Puerta del Sol</a>
-                        <a href="#" id="nav-monolito">Monolito Ponce</a>
-                        <a href="#" id="nav-chachapuma">Chachapuma</a>
-                        <a href="#" id="nav-piramide">Akapana</a>
-                    </div>
+            <div class="logo-group">
+                <div class="logo-icon-wrap">🏛️</div>
+                <div class="logo-text">
+                    <span class="logo-main">TIWANAKU</span>
+                    <span class="logo-sub">MUSEO VIRTUAL 3D</span>
                 </div>
-                
-                <a href="#">Ubicación</a>
+            </div>
+
+            <!-- Controles de Atmósfera / Clima -->
+            <div class="atmosphere-picker">
+                <span class="atmo-label">Atmósfera:</span>
+                <button class="btn-atmosphere active" data-mode="day" title="Día Altiplánico">☀️ Día</button>
+                <button class="btn-atmosphere" data-mode="sunset" title="Ocaso Dorado">🌅 Ocaso</button>
+                <button class="btn-atmosphere" data-mode="night" title="Noche Estrellada">🌌 Noche</button>
+            </div>
+
+            <!-- Menú Principal -->
+            <nav class="nav-links">
+                <a href="#" id="nav-location" class="nav-btn-highlight">📍 Ubicación e Historia</a>
             </nav>
         </header>
 
-        <!-- Panel Lateral Izquierdo -->
+        <!-- Panel Lateral Izquierdo (Ficha Arqueológica) -->
         <aside id="side-panel" class="side-panel">
-            <h1 id="panel-title">Puerta del Sol</h1>
-            
-            <!-- Espacio reservado para tu futura imagen -->
-            <div class="img-placeholder">
-                [Imagen del modelo aquí]
+            <div class="panel-header">
+                <div class="panel-tag">PIEZA ARQUEOLÓGICA</div>
+                <h1 id="panel-title">Puerta del Sol</h1>
+                <p id="panel-subtitle" class="panel-subtitle">Monumento Lítico Sagrado</p>
+                <button id="toggle-panel-btn" class="toggle-panel-btn" title="Ocultar o mostrar ficha">
+                    <span>✕</span> Ocultar
+                </button>
             </div>
-            
-            <div class="text-content">
-                <p id="panel-desc">Este monumental portal lítico es uno de los íconos más importantes de Tiwanaku. Destaca el 'Señor de los Báculos' en su friso central, rodeado de figuras aladas.</p>
+
+            <!-- Navegación por Pestañas -->
+            <div class="panel-tabs">
+                <button class="tab-btn active" data-tab="info">📜 Ficha</button>
+                <button class="tab-btn" data-tab="hotspots">🔍 Puntos Clave</button>
+                <button class="tab-btn" data-tab="gallery">🖼️ Galería</button>
+            </div>
+
+            <!-- Contenido de las Pestañas -->
+            <div class="panel-body">
+                <!-- Pestaña 1: Ficha Técnica e Historia -->
+                <div id="tab-info" class="tab-pane active">
+                    <div class="meta-grid">
+                        <div class="meta-card">
+                            <span class="meta-label">Material</span>
+                            <span id="badge-material" class="meta-val">Andesita Gris</span>
+                        </div>
+                        <div class="meta-card">
+                            <span class="meta-label">Período</span>
+                            <span id="badge-period" class="meta-val">500 - 900 d.C.</span>
+                        </div>
+                        <div class="meta-card">
+                            <span class="meta-label">Dimensiones</span>
+                            <span id="badge-dimensions" class="meta-val">3.0m × 3.8m × 0.5m</span>
+                        </div>
+                        <div class="meta-card">
+                            <span class="meta-label">Ubicación Original</span>
+                            <span id="badge-discovery" class="meta-val">Kalasasaya</span>
+                        </div>
+                    </div>
+
+                    <div class="text-section">
+                        <h3>Descripción Arqueológica</h3>
+                        <p id="panel-desc">Este monumental portal lítico monolítico es la cumbre del arte escultórico y astronómico de Tiwanaku...</p>
+                    </div>
+                </div>
+
+                <!-- Pestaña 2: Puntos Clave (Hotspots) -->
+                <div id="tab-hotspots" class="tab-pane">
+                    <p class="tab-intro">Haz clic en cualquier punto para enfocar el detalle iconográfico en el modelo 3D:</p>
+                    <div id="hotspots-list" class="hotspots-list">
+                        <!-- Generado dinámicamente con JS -->
+                    </div>
+                </div>
+
+                <!-- Pestaña 3: Galería Fotográfica -->
+                <div id="tab-gallery" class="tab-pane">
+                    <div class="gallery-card">
+                        <img id="gallery-image" src="assets/images/sungate_preview.jpg" alt="Fotografía del Monumento">
+                        <p id="gallery-caption" class="gallery-caption">Friso tallado en andesita con la deidad central Viracocha.</p>
+                    </div>
+                </div>
             </div>
         </aside>
 
-        <!-- Píldora inferior -->
+        <!-- Barra de Herramientas 3D Flotante -->
+        <div class="toolbar-3d">
+            <button id="btn-fullscreen" class="btn-tool btn-icon" title="Pantalla Completa">
+                <span>⛶</span> Pantalla Completa
+            </button>
+        </div>
+
+        <!-- Selector Flotante de Modelos (Tarjetas Inferiores) -->
+        <div class="model-cards-carousel">
+            <button class="model-card-btn active" data-model="sungate">
+                <span class="card-icon">🏛️</span>
+                <div class="card-info">
+                    <strong>Puerta del Sol</strong>
+                    <small>Portal Lítico</small>
+                </div>
+            </button>
+            <button class="model-card-btn" data-model="monolito">
+                <span class="card-icon">🗿</span>
+                <div class="card-info">
+                    <strong>Monolito Ponce</strong>
+                    <small>Estela Antropomorfa</small>
+                </div>
+            </button>
+            <button class="model-card-btn" data-model="chachapuma">
+                <span class="card-icon">🐆</span>
+                <div class="card-info">
+                    <strong>Chachapuma</strong>
+                    <small>Guardián Felino</small>
+                </div>
+            </button>
+            <button class="model-card-btn" data-model="piramide">
+                <span class="card-icon">⛰️</span>
+                <div class="card-info">
+                    <strong>Pirámide Akapana</strong>
+                    <small>Montaña Sagrada</small>
+                </div>
+            </button>
+        </div>
+
+        <!-- Píldora de Ayuda de Interacción -->
         <div class="interaction-hint">
-            Arrastra para girar el modelo
+            <span>🖱️ Arrastra para girar · Rueda para zoom · Clic derecho para desplazar</span>
         </div>
     </main>
+
+    <!-- Modal Informativo: Ubicación y Cronología -->
+    <div id="modal-location" class="modal-overlay">
+        <div class="modal-card">
+            <button id="modal-location-close" class="modal-close" title="Cerrar">✕</button>
+            <div class="modal-header">
+                <span class="modal-tag">CONTEXTO HISTÓRICO Y GEOGRÁFICO</span>
+                <h2>Tiwanaku: Cuna de la Civilización Andina</h2>
+                <p>Ubicada a 3,845 metros sobre el nivel del mar en el Altiplano boliviano (La Paz, Bolivia), a 15 km de las orillas del Lago Titicaca.</p>
+            </div>
+
+            <div class="modal-grid">
+                <div class="modal-col">
+                    <h3>📍 Localización Geográfica</h3>
+                    <p>Tiwanaku se asentó en una cuenca de altura estratégica, irrigada por ríos que desembocaban en el Lago Titicaca. Esta ubicación permitió el desarrollo de los <em>Sukakollos</em> (camellones agrícolas elevados) capaces de resistir las heladas altiplánicas y sustentar una población de más de 40.000 habitantes en su época de esplendor.</p>
+                    <div class="location-badges">
+                        <div class="loc-badge">🏔️ <strong>Altitud:</strong> 3.845 msnm</div>
+                        <div class="loc-badge">🌊 <strong>Entorno:</strong> Cuenca del Lago Titicaca</div>
+                        <div class="loc-badge">🏛️ <strong>UNESCO:</strong> Patrimonio Mundial (2000)</div>
+                    </div>
+                </div>
+
+                <div class="modal-col">
+                    <h3>⏳ Cronología Histórica</h3>
+                    <div class="timeline">
+                        <div class="timeline-step">
+                            <div class="step-dot"></div>
+                            <div class="step-content">
+                                <strong>Época Aldeana (1500 a.C. - 45 d.C.)</strong>
+                                <p>Primeros asentamientos sedentarios de agricultores y ceramistas junto al lago.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-step">
+                            <div class="step-dot"></div>
+                            <div class="step-content">
+                                <strong>Época Urbana (45 d.C. - 700 d.C.)</strong>
+                                <p>Monumentalización de la urbe con la construcción de Kalasasaya, Akapana y el Templete Semisubterráneo.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-step">
+                            <div class="step-dot highlight"></div>
+                            <div class="step-content">
+                                <strong>Época Imperial (700 d.C. - 1150 d.C.)</strong>
+                                <p>Máxima expansión hegemónica sobre los Andes del sur, costa peruana y valles bolivianos y chilenos.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="js/main.js"></script>
 </body>
