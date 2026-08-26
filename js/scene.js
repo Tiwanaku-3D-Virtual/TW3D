@@ -117,7 +117,6 @@ export function createScene(container) {
     });
 
     const particles = new THREE.Points(particleGeometry, particleMaterial);
-    scene.add(particles);
 
     function updateParticles() {
         const positions = particleGeometry.attributes.position.array;
@@ -153,8 +152,7 @@ export function createScene(container) {
             particleMaterial.color.setHex(0xffe6b4);
             particleMaterial.opacity = 0.6;
         } else if (mode === 'sunset') {
-            scene.background = null;
-            scene.background = new THREE.Color(0x351914);
+            scene.background = originalSkyTexture;
             scene.environment = null;
             sunLight.color.setHex(0xff7722);
             sunLight.intensity = 2.8;
@@ -168,8 +166,7 @@ export function createScene(container) {
             particleMaterial.color.setHex(0xff9944);
             particleMaterial.opacity = 0.8;
         } else if (mode === 'night') {
-            scene.background = null;
-            scene.background = new THREE.Color(0x060913);
+            scene.background = originalSkyTexture;
             scene.environment = null;
             sunLight.color.setHex(0x7799dd);
             sunLight.intensity = 0.85;
@@ -214,4 +211,4 @@ export function createScene(container) {
         getIsWireframe: () => isWireframe,
         lights: { sunLight, hemiLight, ambientLight, fillLight }
     };
-}
+}

@@ -31,10 +31,12 @@ const hotspotsOverlay = document.getElementById('hotspots-overlay');
 let modelDatabase = {};
 let currentModelKey = 'sungate';
 let originalSkyTexture = null;
+let sunsetSkyTexture = null;
+let nightSkyTexture = null;
 
 // Progreso de carga
 const loadingState = {
-    totalItems: 9,
+    totalItems: 14,
     loadedItems: 0
 };
 
@@ -245,6 +247,20 @@ async function init() {
         scene.background = skyTexture;
         scene.environment = skyTexture;
         updateLoadingStep("Textura de cielo lista");
+
+        updateLoadingStep("Cargando cielo de amanecer...");
+        sunsetSkyTexture = await loadTexture('assets/textures/amanecer.png', {
+            colorSpace: THREE.SRGBColorSpace,
+            mapping: THREE.EquirectangularReflectionMapping
+        });
+        updateLoadingStep("Cielo de amanecer listo");
+
+        updateLoadingStep("Cargando cielo nocturno...");
+        nightSkyTexture = await loadTexture('assets/textures/Cold Night Equirect.png', {
+            colorSpace: THREE.SRGBColorSpace,
+            mapping: THREE.EquirectangularReflectionMapping
+        });
+        updateLoadingStep("Cielo nocturno listo");
 
         updateLoadingStep("Cargando terreno altiplánico...");
         const groundTexture = await loadTexture('assets/textures/GroundDirtRocky020_COL_2K.jpg', {
@@ -579,7 +595,12 @@ function setupUIEvents() {
             document.querySelectorAll('.btn-atmosphere').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             const mode = btn.dataset.mode;
-            setAtmosphere(mode, originalSkyTexture);
+            const skyTexture = mode === 'sunset'
+                ? sunsetSkyTexture
+                : mode === 'night'
+                    ? nightSkyTexture
+                    : originalSkyTexture;
+            setAtmosphere(mode, skyTexture);
         });
     });
 
