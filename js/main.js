@@ -1,19 +1,17 @@
 import * as THREE from 'three';
-import gsap from 'gsap'; 
+import gsap from 'gsap';
 import { createScene } from './scene.js';
 import { loadModel } from './loaders/modelLoader.js';
 import { loadTexture } from './loaders/textureLoader.js';
 
-// Inicialización del motor 3D
+// --- 1. INICIALIZACIÓN DEL ENTORNO 3D ---
 const container = document.getElementById('webgl-container');
-const sceneManager = createScene(container);
-const { scene, camera, renderer, controls, updateParticles, setAtmosphere, toggleWireframe } = sceneManager;
+const { scene, camera, renderer, controls, setAtmosphere } = createScene(container);
 
-// Elementos de la Interfaz (UI)
+// Referencias a elementos del DOM (UI)
 const loadingScreen = document.getElementById('loading-screen');
 const loadingProgress = document.getElementById('loading-progress-bar');
 const loadingPercentage = document.getElementById('loading-percentage');
-const loadingStatus = document.getElementById('loading-status');
 
 const panelTitle = document.getElementById('panel-title');
 const panelSubtitle = document.getElementById('panel-subtitle');
@@ -27,28 +25,25 @@ const galleryCaption = document.getElementById('gallery-caption');
 const hotspotsListContainer = document.getElementById('hotspots-list');
 const hotspotsOverlay = document.getElementById('hotspots-overlay');
 
-// Variables globales de estado
+// Estado global de la aplicación
 let modelDatabase = {};
 let currentModelKey = 'sungate';
 let originalSkyTexture = null;
 let sunsetSkyTexture = null;
 let nightSkyTexture = null;
 
-// Progreso de carga
-const loadingState = {
-    totalItems: 14,
-    loadedItems: 0
-};
+// Helper para actualizar la barra de progreso de carga
+let loadedCount = 0;
+const totalResources = 9;
 
-function updateLoadingStep(message) {
-    loadingState.loadedItems++;
-    const percent = Math.min(100, Math.round((loadingState.loadedItems / loadingState.totalItems) * 100));
+function updateProgress() {
+    loadedCount++;
+    const percent = Math.min(100, Math.round((loadedCount / totalResources) * 100));
     if (loadingProgress) loadingProgress.style.width = `${percent}%`;
     if (loadingPercentage) loadingPercentage.innerText = `${percent}%`;
-    if (loadingStatus && message) loadingStatus.innerText = message;
 }
 
-// --- BASE DE DATOS ARQUEOLÓGICA ---
+// --- 2. BASE DE DATOS ARQUEOLÓGICA Y CONFIGURACIÓN DE CÁMARA ---
 const ARCHAEOLOGY_DATA = {
     sungate: {
         title: "Puerta del Sol",
@@ -69,7 +64,7 @@ const ARCHAEOLOGY_DATA = {
                 pos: new THREE.Vector3(0.0, 2.2, 0.4),
                 camPos: new THREE.Vector3(0, 2.2, 2.2),
                 targetPos: new THREE.Vector3(0, 2.2, 0),
-                desc: "Figura central que representa a Viracocha, la deidad creadora andina. Porta dos cetros o báculos ceremoniales rematados con cabezas de cóndor y de su cabeza emanan rayos solares."
+                desc: "Figura central que representa a Viracocha, la deidad creadora andina. De su cabeza emanan rayos solares y porta dos cetros rematados con cabezas de cóndor."
             },
             {
                 id: "sg-winged",
@@ -77,7 +72,7 @@ const ARCHAEOLOGY_DATA = {
                 pos: new THREE.Vector3(1.1, 2.0, 0.4),
                 camPos: new THREE.Vector3(1.1, 2.0, 2.2),
                 targetPos: new THREE.Vector3(1.1, 2.0, 0),
-                desc: "48 figuras aladas en 3 niveles, arrodilladas en actitud de reverencia hacia la deidad central. Representan sacerdotes y mensajeros celestiales mitad humanos y mitad cóndores."
+                desc: "48 figuras aladas en 3 niveles, arrodilladas en reverencia hacia la deidad central. Representan sacerdotes y mensajeros celestiales mitad humanos y mitad cóndores."
             },
             {
                 id: "sg-calendar",
@@ -89,7 +84,7 @@ const ARCHAEOLOGY_DATA = {
             },
             {
                 id: "sg-portal",
-                title: "Vano y Alineación",
+                title: "Vano y Alineación Solar",
                 pos: new THREE.Vector3(0.0, 0.6, 0.0),
                 camPos: new THREE.Vector3(0, 0.9, 4.0),
                 targetPos: new THREE.Vector3(0, 0.8, 0),
@@ -107,37 +102,31 @@ const ARCHAEOLOGY_DATA = {
         image: "assets/images/monolito_preview.jpg",
         imageCaption: "Monolito Ponce erigido en el patio interior del templo de Kalasasaya.",
         desc: "Escultura antropomorfa de una sola pieza descubierta por el arqueólogo boliviano Carlos Ponce Sanginés. Representa a un dignatario o sacerdote en estado de trance ceremonial, sosteniendo un vaso Kero sagrado en una mano y una tableta de rapé en la otra, con iconografía fina de hombres-cóndor y peces.",
-        camDefault: { x: 0, y: 2.0, z: 6.0 },
+        camDefault: { x: 0, y: 1.8, z: 4.8 },
         camTarget: { x: 0, y: 1.5, z: 0 },
-        views: {
-            front: { cam: { x: 0, y: 2.0, z: 5.0 }, target: { x: 0, y: 1.5, z: 0 } },
-            profile: { cam: { x: 4.5, y: 2.0, z: 0 }, target: { x: 0, y: 1.5, z: 0 } },
-            detail: { cam: { x: 0, y: 2.5, z: 2.0 }, target: { x: 0, y: 2.5, z: 0 } },
-            top: { cam: { x: 0, y: 6.5, z: 0.1 }, target: { x: 0, y: 1.0, z: 0 } }
-        },
         hotspots: [
             {
                 id: "mp-face",
                 title: "Rostro y Diadema",
-                pos: new THREE.Vector3(0.0, 2.5, 0.45),
-                camPos: new THREE.Vector3(0, 2.5, 2.0),
-                targetPos: new THREE.Vector3(0, 2.5, 0),
+                pos: new THREE.Vector3(0.0, 2.45, 0.38),
+                camPos: new THREE.Vector3(0.0, 2.45, 1.8),
+                targetPos: new THREE.Vector3(0.0, 2.45, 0.0),
                 desc: "Ojos cuadrangulares con lágrimas en forma de aves y una corona o turbante decorado con motivos escalonados y orejeras tubulares sacerdotales."
             },
             {
                 id: "mp-kero",
                 title: "Vaso Kero Sagrado",
-                pos: new THREE.Vector3(0.0, 1.55, 0.45),
-                camPos: new THREE.Vector3(0, 1.55, 1.8),
-                targetPos: new THREE.Vector3(0, 1.55, 0),
-                desc: "Sostiene firmemente contra el pecho un vaso ceremonial Kero utilizado en las libaciones rituales de chicha durante festividades astronómicas."
+                pos: new THREE.Vector3(0.0, 1.55, 0.38),
+                camPos: new THREE.Vector3(0.0, 1.55, 1.7),
+                targetPos: new THREE.Vector3(0.0, 1.55, 0.0),
+                desc: "Sostiene contra el pecho un vaso ceremonial Kero utilizado en las libaciones rituales de chicha durante festividades astronómicas."
             },
             {
                 id: "mp-belt",
                 title: "Faja Iconográfica",
-                pos: new THREE.Vector3(0.0, 0.8, 0.45),
-                camPos: new THREE.Vector3(0, 0.8, 1.9),
-                targetPos: new THREE.Vector3(0, 0.8, 0),
+                pos: new THREE.Vector3(0.0, 0.95, 0.38),
+                camPos: new THREE.Vector3(0.0, 0.95, 1.7),
+                targetPos: new THREE.Vector3(0.0, 0.95, 0.0),
                 desc: "Cinturón grabado con figuras de hombres-pez y cóndores, simbolizando el dominio sobre las aguas del Lago Titicaca y las alturas celestes."
             }
         ]
@@ -149,40 +138,34 @@ const ARCHAEOLOGY_DATA = {
         period: "700 - 900 d.C.",
         dimensions: "1.3m × 0.7m × 0.8m",
         discovery: "Base de la Pirámide de Akapana",
-        image: "assets/images/sungate_preview.jpg",
-        imageCaption: "Escultura en bulto redondo de basáltica negra representando al guerrero felino.",
+        image: "assets/images/chachapuma_preview.png",
+        imageCaption: "Escultura antropomorfa en basalto negro del Chachapuma sosteniendo una cabeza trofeo.",
         desc: "Fascinante escultura zoomorfa de basalto negro que representa la figura mítica del hombre-puma o guerrero felino. Los Chachapumas custodiaban las escalinatas principales de la pirámide de Akapana, protegiendo el espacio sagrado y simbolizando el poder y sacrificio en la cosmovisión andina.",
-        camDefault: { x: 0, y: 1.5, z: 4.5 },
-        camTarget: { x: 0, y: 0.7, z: 0 },
-        views: {
-            front: { cam: { x: 0, y: 1.2, z: 3.5 }, target: { x: 0, y: 0.7, z: 0 } },
-            profile: { cam: { x: 3.2, y: 1.0, z: 0 }, target: { x: 0, y: 0.7, z: 0 } },
-            detail: { cam: { x: 0, y: 0.95, z: 1.8 }, target: { x: 0, y: 0.9, z: 0 } },
-            top: { cam: { x: 0, y: 4.5, z: 0.1 }, target: { x: 0, y: 0.5, z: 0 } }
-        },
+        camDefault: { x: 0, y: 1.3, z: 3.4 },
+        camTarget: { x: 0, y: 0.85, z: 0 },
         hotspots: [
             {
                 id: "cp-fangs",
                 title: "Fauces de Felino",
-                pos: new THREE.Vector3(0.0, 0.95, 0.4),
-                camPos: new THREE.Vector3(0, 0.95, 1.8),
-                targetPos: new THREE.Vector3(0, 0.9, 0),
+                pos: new THREE.Vector3(0.0, 1.35, 0.35),
+                camPos: new THREE.Vector3(0, 1.35, 1.5),
+                targetPos: new THREE.Vector3(0, 1.3, 0),
                 desc: "Rasgos anatómicos de puma con colmillos cruzados y orejas redondeadas, encarnando la ferocidad del felino andino."
             },
             {
                 id: "cp-trophy",
                 title: "Cabeza Trofeo",
-                pos: new THREE.Vector3(0.0, 0.45, 0.45),
-                camPos: new THREE.Vector3(0, 0.45, 1.6),
-                targetPos: new THREE.Vector3(0, 0.45, 0),
+                pos: new THREE.Vector3(0.0, 0.78, 0.38),
+                camPos: new THREE.Vector3(0, 0.78, 1.4),
+                targetPos: new THREE.Vector3(0, 0.78, 0),
                 desc: "Sostiene entre sus garras una cabeza humana decapitada, símbolo de ofrenda y fecundidad de la tierra en el ritual de Akapana."
             },
             {
                 id: "cp-pose",
                 title: "Postura Ceremonial",
-                pos: new THREE.Vector3(0.3, 0.25, 0.0),
-                camPos: new THREE.Vector3(1.6, 0.6, 1.6),
-                targetPos: new THREE.Vector3(0, 0.4, 0),
+                pos: new THREE.Vector3(0.38, 0.35, 0.0),
+                camPos: new THREE.Vector3(1.6, 0.7, 1.4),
+                targetPos: new THREE.Vector3(0, 0.6, 0),
                 desc: "Cuerpo humanoide arrodillado en tensión, preparado para la defensa ritual de los templos mayores de Tiwanaku."
             }
         ]
@@ -194,171 +177,267 @@ const ARCHAEOLOGY_DATA = {
         period: "400 - 900 d.C.",
         dimensions: "194m × 182m × 18m de Altura",
         discovery: "Complejo Arqueológico Central",
-        image: "assets/images/monolito_preview.jpg",
-        imageCaption: "Reconstrucción tridimensional de la estructura piramidal de 7 terrazas.",
+        image: "assets/images/piramide_preview.png",
+        imageCaption: "Fotografía arqueológica actual de las terrazas escalonadas de la Pirámide de Akapana.",
         desc: "La Pirámide de Akapana es la estructura monumental más imponente de Tiwanaku. Concebida como una montaña artificial sagrada con siete terrazas escalonadas, albergaba en su cima un estanque ceremonial en forma de cruz escalonada (Chakana) y un avanzado sistema hidráulico subterráneo.",
-        camDefault: { x: 0, y: 15, z: 42 },
-        camTarget: { x: 0, y: 5, z: 0 },
-        views: {
-            front: { cam: { x: 0, y: 14, z: 38 }, target: { x: 0, y: 5, z: 0 } },
-            profile: { cam: { x: 38, y: 14, z: 0 }, target: { x: 0, y: 5, z: 0 } },
-            detail: { cam: { x: 0, y: 18, z: 15 }, target: { x: 0, y: 6, z: 0 } },
-            top: { cam: { x: 0, y: 55, z: 0.1 }, target: { x: 0, y: 2, z: 0 } }
-        },
+        camDefault: { x: 0, y: 16, z: 44 },
+        camTarget: { x: 0, y: 3.5, z: 0 },
         hotspots: [
             {
                 id: "ak-temple",
                 title: "Templo y Depresión Superior",
-                pos: new THREE.Vector3(0.0, 5.0, 0.0),
-                camPos: new THREE.Vector3(0, 16, 24),
-                targetPos: new THREE.Vector3(0, 5, 0),
+                pos: new THREE.Vector3(0.0, 5.2, 0.0),
+                camPos: new THREE.Vector3(0, 16, 22),
+                targetPos: new THREE.Vector3(0, 5.2, 0),
                 desc: "Terraza superior donde se encontraba un recinto sagrado con piscina ceremonial en forma de Chakana para rituales al agua y a los astros."
             },
             {
                 id: "ak-terraces",
                 title: "Muros Ciclópeos",
-                pos: new THREE.Vector3(6.0, 2.0, 6.0),
-                camPos: new THREE.Vector3(14, 8, 18),
-                targetPos: new THREE.Vector3(6, 2, 6),
+                pos: new THREE.Vector3(10.0, 2.5, 10.0),
+                camPos: new THREE.Vector3(18, 9, 20),
+                targetPos: new THREE.Vector3(10, 2.5, 10),
                 desc: "Siete niveles de contención levantados con grandes sillares de andesita y arenisca perfectamente encajados sin mortero."
             },
             {
                 id: "ak-drainage",
                 title: "Canales Hidráulicos",
-                pos: new THREE.Vector3(0.0, 0.5, 8.0),
-                camPos: new THREE.Vector3(0, 4, 14),
-                targetPos: new THREE.Vector3(0, 0.5, 8),
+                pos: new THREE.Vector3(0.0, 0.6, 20.0),
+                camPos: new THREE.Vector3(0, 5, 28),
+                targetPos: new THREE.Vector3(0, 0.6, 20),
                 desc: "Canales líticos subterráneos que hacían descender el agua de lluvia por el interior de la pirámide, emitiendo un sonido sagrado similar a truenos."
             }
         ]
     }
 };
 
-// --- INICIALIZACIÓN Y CARGA DE RECURSOS ---
+/**
+ * Genera un modelo 3D geométrico procedural de respaldo para la Pirámide de Akapana
+ * con 7 terrazas escalonadas de arenisca/arcilla andina.
+ */
+function createFallbackPyramid() {
+    const group = new THREE.Group();
+    const levels = 7;
+    const baseWidth = 36;
+    const heightPerLevel = 1.3;
+    const material = new THREE.MeshStandardMaterial({
+        color: 0x985e3c,
+        roughness: 0.9,
+        metalness: 0.05
+    });
+
+    for (let i = 0; i < levels; i++) {
+        const factor = 1 - (i * 0.11);
+        const w = baseWidth * factor;
+        const geom = new THREE.BoxGeometry(w, heightPerLevel, w);
+        const mesh = new THREE.Mesh(geom, material);
+        mesh.position.y = (i + 0.5) * heightPerLevel;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+    }
+    return group;
+}
+
+// --- 3. CARGA ASÍNCRONA DE RECURSOS ---
 async function init() {
     try {
-        // 1. Texturas
-        updateLoadingStep("Cargando cielo andino...");
-        const skyTexture = await loadTexture('assets/textures/cielos.png', {
+        // Carga de Texturas de Cielo (Fondos Equirectangulares)
+        originalSkyTexture = await loadTexture('assets/textures/cielos.png', {
             colorSpace: THREE.SRGBColorSpace,
             mapping: THREE.EquirectangularReflectionMapping
         });
-        originalSkyTexture = skyTexture;
-        scene.background = skyTexture;
-        scene.environment = skyTexture;
-        updateLoadingStep("Textura de cielo lista");
+        scene.background = originalSkyTexture;
+        scene.environment = originalSkyTexture;
+        updateProgress();
 
-        updateLoadingStep("Cargando cielo de amanecer...");
         sunsetSkyTexture = await loadTexture('assets/textures/amanecer.png', {
             colorSpace: THREE.SRGBColorSpace,
             mapping: THREE.EquirectangularReflectionMapping
         });
-        updateLoadingStep("Cielo de amanecer listo");
+        updateProgress();
 
-        updateLoadingStep("Cargando cielo nocturno...");
         nightSkyTexture = await loadTexture('assets/textures/Cold Night Equirect.png', {
             colorSpace: THREE.SRGBColorSpace,
             mapping: THREE.EquirectangularReflectionMapping
         });
-        updateLoadingStep("Cielo nocturno listo");
+        updateProgress();
 
-        updateLoadingStep("Cargando terreno altiplánico...");
+        // Carga de Terreno
         const groundTexture = await loadTexture('assets/textures/GroundDirtRocky020_COL_2K.jpg', {
             colorSpace: THREE.SRGBColorSpace,
             wrapS: THREE.RepeatWrapping,
             wrapT: THREE.RepeatWrapping,
             repeat: new THREE.Vector2(40, 40)
         });
-        updateLoadingStep("Terreno listo");
 
-        // Piso 3D
-        const groundGeometry = new THREE.PlaneGeometry(400, 400); 
-        const groundMaterial = new THREE.MeshStandardMaterial({
-            map: groundTexture,
-            roughness: 0.88,
-            metalness: 0.08
-        });
-        const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+        const groundMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(400, 400),
+            new THREE.MeshStandardMaterial({ map: groundTexture, roughness: 0.88, metalness: 0.08 })
+        );
         groundMesh.rotation.x = -Math.PI / 2;
-        groundMesh.position.y = 0;
         groundMesh.receiveShadow = true;
         scene.add(groundMesh);
+        updateProgress();
 
-        // Texturas adicionales
-        const [sgAlbedo, sgNormal, monoTexture, piramideAlbedo, piramideNormal] = await Promise.all([
-            loadTexture('assets/textures/SunGate_albedo.png', { colorSpace: THREE.SRGBColorSpace, flipY: false, wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping }),
+        // Carga paralela de texturas de modelos
+        const [sgAlbedo, sgNormal, piramideAlbedo, piramideNormal] = await Promise.all([
+            loadTexture('assets/textures/SunGate_albedo.png', { colorSpace: THREE.SRGBColorSpace, flipY: false, wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping }).catch(() => null),
             loadTexture('assets/textures/SunGate_normal.png', { wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping }).catch(() => null),
-            loadTexture('assets/textures/monolito_texture.jpeg', { colorSpace: THREE.SRGBColorSpace, flipY: false }),
-            loadTexture('assets/textures/piramide/509b3feffce3dcdd8a27aa21e92175a3.png', { colorSpace: THREE.SRGBColorSpace, wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat: new THREE.Vector2(2, 2) }),
+            loadTexture('assets/textures/piramide/509b3feffce3dcdd8a27aa21e92175a3.png', { colorSpace: THREE.SRGBColorSpace, wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat: new THREE.Vector2(2, 2) }).catch(() => null),
             loadTexture('assets/textures/piramide/b6da21e5e4fec73c0613b04789ddb478.png', { wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat: new THREE.Vector2(2, 2) }).catch(() => null)
         ]);
-        updateLoadingStep("Texturas líticas aplicadas");
+        updateProgress();
 
-        // 2. Modelos 3D
-        updateLoadingStep("Cargando Puerta del Sol...");
+        // Carga de Modelos 3D
         const sunGate = await loadModel('assets/models/SunGate.glb');
-        updateLoadingStep("Cargando Monolito Ponce...");
-        const monolito = await loadModel('assets/models/monolito_ponce.glb');
-        updateLoadingStep("Cargando Chachapuma...");
-        const chachapuma = await loadModel('assets/models/chachapuma.glb');
-        updateLoadingStep("Cargando Pirámide de Akapana...");
-        const piramide = await loadModel('assets/models/piramide.glb', { autoCenter: true });
-        updateLoadingStep("Modelos 3D completados");
+        updateProgress();
+        const monolito = await loadModel('assets/models/monolito_ponce.glb', { scale: 0.03, autoCenter: true });
+        updateProgress();
+        const chachapuma = await loadModel('assets/models/chachapuma.glb', { scale: 0.017, autoCenter: true });
+        updateProgress();
 
-        // Aplicación de Texturas y Normales
-        sunGate.traverse((child) => {
-            if (child.isMesh && child.material) {
-                child.material.map = sgAlbedo;
-                if (sgNormal) {
-                    child.material.normalMap = sgNormal;
-                    child.material.normalScale.set(0.6, 0.6);
+        // Carga secuencial y tolerante a fallos para la Pirámide de Akapana
+        let piramide = null;
+        const pyramidCandidates = [
+            'assets/models/piramide2.glb.glb',
+            'assets/models/piramide2.glb',
+            'assets/models/pira.glb',
+            'assets/models/piramide.glb'
+        ];
+
+        for (const modelPath of pyramidCandidates) {
+            try {
+                piramide = await loadModel(modelPath, { autoCenter: true, fitSize: 35 });
+                if (piramide) {
+                    console.log(`Pirámide de Akapana cargada exitosamente desde: ${modelPath}`);
+                    break;
                 }
-                child.material.roughness = 0.9;
-                child.material.metalness = 0.1;
-                child.material.color.set(0xffffff);
-                child.material.needsUpdate = true;
+            } catch (err) {
+                console.warn(`Aviso: No se pudo cargar modelo en ${modelPath}:`, err?.message || err);
             }
-        });
+        }
 
-        monolito.traverse((child) => {
-            if (child.isMesh && child.material) {
-                child.material = child.material.clone();
-                child.material.map = monoTexture;
-                child.material.roughness = 0.85;
-                child.material.metalness = 0.05;
-                child.material.color.set(0xffffff);
-                child.material.needsUpdate = true;
-            }
-        });
+        // Si ningún archivo físico se pudo cargar (ej. si fue borrado o renombrado), generar pirámide procedural
+        if (!piramide) {
+            console.warn("Generando modelo 3D de pirámide escalonada ceremonial procedural como respaldo...");
+            piramide = createFallbackPyramid();
+        }
+        updateProgress();
 
-        chachapuma.traverse((child) => {
-            if (child.isMesh && child.material) {
-                child.material.roughness = 0.45; // Basalto oscuro más brillante y pulido
-                child.material.metalness = 0.2;
-                child.material.needsUpdate = true;
-            }
-        });
+        // Asignación de Texturas y Materiales PBR
+        if (sunGate) {
+            sunGate.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const processMat = (mat) => {
+                        if (!mat) return mat;
+                        if (sgAlbedo) mat.map = sgAlbedo;
+                        if (sgNormal) {
+                            mat.normalMap = sgNormal;
+                            if (mat.normalScale) mat.normalScale.set(0.6, 0.6);
+                        }
+                        if ('roughness' in mat) mat.roughness = 0.9;
+                        if ('metalness' in mat) mat.metalness = 0.1;
+                        if (mat.color && typeof mat.color.set === 'function') mat.color.set(0xffffff);
+                        mat.needsUpdate = true;
+                        return mat;
+                    };
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(processMat);
+                    } else {
+                        processMat(child.material);
+                    }
+                }
+            });
+        }
 
-        piramide.traverse((child) => {
-            if (child.isMesh && child.material) {
-                child.material = child.material.clone();
-                child.material.map = piramideAlbedo;
-                if (piramideNormal) child.material.normalMap = piramideNormal;
-                child.material.roughness = 0.95;
-                child.material.metalness = 0.0;
-                child.material.color.set(0xffffff);
-                child.material.needsUpdate = true;
-            }
-        });
+        if (monolito) {
+            monolito.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const processMat = (mat) => {
+                        if (!mat) return mat;
+                        const m = typeof mat.clone === 'function' ? mat.clone() : mat;
+                        if (m.map) m.map.colorSpace = THREE.SRGBColorSpace;
+                        if ('roughness' in m) m.roughness = 0.78;
+                        if ('metalness' in m) m.metalness = 0.05;
+                        if (sgNormal && 'normalMap' in m) {
+                            m.normalMap = sgNormal;
+                            if (m.normalScale) m.normalScale.set(0.35, 0.35);
+                        }
+                        if (m.color && typeof m.color.setHex === 'function') m.color.setHex(0xffffff);
+                        m.needsUpdate = true;
+                        return m;
+                    };
+                    if (Array.isArray(child.material)) {
+                        child.material = child.material.map(processMat);
+                    } else {
+                        child.material = processMat(child.material);
+                    }
+                }
+            });
+        }
 
-        // Configuración de los modelos en la escena
+        if (chachapuma) {
+            chachapuma.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const processMat = (mat) => {
+                        if (!mat) return mat;
+                        const m = typeof mat.clone === 'function' ? mat.clone() : mat;
+                        if ('roughness' in m) m.roughness = 0.62;
+                        if ('metalness' in m) m.metalness = 0.15;
+                        if (sgNormal && 'normalMap' in m) {
+                            m.normalMap = sgNormal;
+                            if (m.normalScale) m.normalScale.set(0.4, 0.4);
+                        }
+                        if (m.color && typeof m.color.setHex === 'function') m.color.setHex(0xd0d2d6);
+                        m.needsUpdate = true;
+                        return m;
+                    };
+                    if (Array.isArray(child.material)) {
+                        child.material = child.material.map(processMat);
+                    } else {
+                        child.material = processMat(child.material);
+                    }
+                }
+            });
+        }
+
+        if (piramide) {
+            piramide.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const configureMat = (origMat) => {
+                        if (!origMat) return origMat;
+                        const mat = typeof origMat.clone === 'function' ? origMat.clone() : origMat;
+                        if (piramideAlbedo) mat.map = piramideAlbedo;
+                        if (piramideNormal) mat.normalMap = piramideNormal;
+                        if ('roughness' in mat) mat.roughness = 0.92;
+                        if ('metalness' in mat) mat.metalness = 0.02;
+                        if (mat.color && typeof mat.color.set === 'function') {
+                            mat.color.set('#985e3c');
+                        }
+                        mat.needsUpdate = true;
+                        return mat;
+                    };
+
+                    if (Array.isArray(child.material)) {
+                        child.material = child.material.map(configureMat);
+                    } else {
+                        child.material = configureMat(child.material);
+                    }
+                }
+            });
+        }
+
+        // Añadir modelos a la escena (ocultos inicialmente)
         [sunGate, monolito, chachapuma, piramide].forEach(m => {
-            m.position.set(0, 0, 0);
-            m.visible = false;
-            scene.add(m);
+            if (m) {
+                m.position.set(0, 0, 0);
+                m.visible = false;
+                scene.add(m);
+            }
         });
 
-        // Guardar base de datos conectando malla con arqueología
+        // Registrar base de datos unificada
         modelDatabase = {
             sungate: { mesh: sunGate, ...ARCHAEOLOGY_DATA.sungate },
             monolito: { mesh: monolito, ...ARCHAEOLOGY_DATA.monolito },
@@ -366,47 +445,42 @@ async function init() {
             piramide: { mesh: piramide, ...ARCHAEOLOGY_DATA.piramide }
         };
 
-        // Configurar Eventos de la Interfaz
+        // Configurar listeners de interfaz
         setupUIEvents();
 
-        // Ocultar pantalla de carga con animación suave
+        // Desvanecer pantalla de carga con GSAP
         gsap.to(loadingScreen, {
             opacity: 0,
             duration: 0.8,
             ease: "power2.out",
-            onComplete: () => {
-                loadingScreen.style.display = 'none';
-            }
+            onComplete: () => { loadingScreen.style.display = 'none'; }
         });
 
-        // Mostrar primer modelo
+        // Activar modelo inicial
         switchModel('sungate');
 
     } catch (error) {
-        console.error("Error al inicializar la experiencia:", error);
-        if (loadingStatus) {
-            loadingStatus.innerText = "Error cargando recursos. Por favor recargue la página.";
-            loadingStatus.style.color = "#ff6b6b";
+        console.error("Error al inicializar Tiwanaku 3D:", error);
+        if (loadingPercentage) {
+            loadingPercentage.innerText = "Error cargando recursos 3D. Por favor recarga la página.";
+            loadingPercentage.style.color = "#ff6b6b";
         }
     }
 }
 
-// --- FUNCIÓN DE CAMBIO DE MODELO ---
+// --- 4. CAMBIO DE MODELOS Y TRANSICIONES CINEMÁTICAS ---
 function switchModel(modelKey) {
     const selectedData = modelDatabase[modelKey];
     if (!selectedData) return;
 
     currentModelKey = modelKey;
 
-    // 1. Ocultar todas las mallas
-    Object.values(modelDatabase).forEach(data => {
-        data.mesh.visible = false;
+    // 1. Mostrar únicamente la malla 3D activa
+    Object.values(modelDatabase).forEach(item => {
+        item.mesh.visible = (item === selectedData);
     });
 
-    // 2. Mostrar la seleccionada
-    selectedData.mesh.visible = true;
-
-    // 3. Actualizar textos e información en el panel lateral
+    // 2. Actualizar textos de la ficha arqueológica
     if (panelTitle) panelTitle.innerText = selectedData.title;
     if (panelSubtitle) panelSubtitle.innerText = selectedData.subtitle;
     if (panelDesc) panelDesc.innerText = selectedData.desc;
@@ -417,37 +491,36 @@ function switchModel(modelKey) {
     if (galleryImage) galleryImage.src = selectedData.image;
     if (galleryCaption) galleryCaption.innerText = selectedData.imageCaption;
 
-    // 4. Actualizar Hotspots en la UI
+    // 3. Renderizar Hotspots asociados
     renderHotspots(selectedData.hotspots);
 
-    // 5. Actualizar botones activos del selector inferior y dropdown
-    updateActiveNavIndicators(modelKey);
+    // 4. Actualizar botones activos del selector inferior
+    document.querySelectorAll('.model-card-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.model === modelKey);
+    });
 
-    // 6. Transición de cámara hacia la posición por defecto del modelo
-    const defCam = selectedData.camDefault;
-    const defTarget = selectedData.camTarget;
-
+    // 5. Animación de cámara y punto de enfoque (GSAP interpola Vector3 suavemente)
     gsap.to(camera.position, {
-        x: defCam.x,
-        y: defCam.y,
-        z: defCam.z,
+        x: selectedData.camDefault.x,
+        y: selectedData.camDefault.y,
+        z: selectedData.camDefault.z,
         duration: 1.6,
         ease: "power3.inOut"
     });
 
     gsap.to(controls.target, {
-        x: defTarget.x,
-        y: defTarget.y,
-        z: defTarget.z,
+        x: selectedData.camTarget.x,
+        y: selectedData.camTarget.y,
+        z: selectedData.camTarget.z,
         duration: 1.6,
         ease: "power3.inOut",
         onUpdate: () => controls.update()
     });
 }
 
-// --- RENDERIZADO DE HOTSPOTS 3D & 2D ---
+// --- 5. SISTEMA DE HOTSPOTS (PROYECCIÓN 3D A 2D) ---
 function renderHotspots(hotspots = []) {
-    // 1. Limpiar lista en el panel
+    // 1. Lista textual en la pestaña del panel lateral
     if (hotspotsListContainer) {
         hotspotsListContainer.innerHTML = '';
         hotspots.forEach((hs, index) => {
@@ -465,14 +538,13 @@ function renderHotspots(hotspots = []) {
         });
     }
 
-    // 2. Renderizar marcadores flotantes en overlay
+    // 2. Marcadores interactivos (pines HTML sobre el canvas)
     if (hotspotsOverlay) {
         hotspotsOverlay.innerHTML = '';
         hotspots.forEach((hs, index) => {
             const pin = document.createElement('div');
             pin.className = 'hotspot-pin';
             pin.id = `pin-${hs.id}`;
-            pin.dataset.id = hs.id;
             pin.innerHTML = `
                 <div class="pin-pulse"></div>
                 <div class="pin-core">${index + 1}</div>
@@ -490,39 +562,45 @@ function renderHotspots(hotspots = []) {
     }
 }
 
-// Actualizar posición 2D de los marcadores en cada fotograma
+/**
+ * Proyección matemática 3D -> 2D para ubicar los pines HTML sobre el canvas WebGL en tiempo real.
+ */
+const tempVector = new THREE.Vector3();
+
 function updateHotspotsPositions() {
     const currentData = modelDatabase[currentModelKey];
     if (!currentData || !currentData.hotspots || !hotspotsOverlay) return;
-
-    const tempV = new THREE.Vector3();
 
     currentData.hotspots.forEach((hs) => {
         const pin = document.getElementById(`pin-${hs.id}`);
         if (!pin) return;
 
-        tempV.copy(hs.pos);
-        tempV.project(camera);
+        // Copiamos la coordenada 3D en el espacio mundial
+        tempVector.copy(hs.pos);
 
-        // Verificar si está frente a la cámara (Z < 1)
-        const isBehind = tempV.z > 1;
-        if (isBehind) {
+        // .project(camera) aplica las matrices de Vista y Proyección de la cámara,
+        // transformando la posición 3D a Coordenadas de Dispositivo Normalizadas (NDC: [-1, 1])
+        tempVector.project(camera);
+
+        // Si z > 1, el punto está detrás del plano de la cámara, por lo que lo ocultamos
+        if (tempVector.z > 1) {
             pin.style.display = 'none';
             return;
         }
 
-        // Convertir coordenadas normalizadas a pixeles
-        const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-(tempV.y * 0.5) + 0.5) * window.innerHeight;
+        // Convertimos el rango NDC [-1, 1] a pixeles reales de la pantalla [0, innerWidth / innerHeight]
+        const screenX = (tempVector.x * 0.5 + 0.5) * window.innerWidth;
+        const screenY = (-(tempVector.y * 0.5) + 0.5) * window.innerHeight;
 
         pin.style.display = 'block';
-        pin.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+        pin.style.transform = `translate(-50%, -50%) translate(${screenX}px, ${screenY}px)`;
     });
 }
 
 function focusHotspot(hs) {
     if (!hs) return;
 
+    // Acercamiento cinemático de cámara al detalle iconográfico
     gsap.to(camera.position, {
         x: hs.camPos.x,
         y: hs.camPos.y,
@@ -540,23 +618,15 @@ function focusHotspot(hs) {
         onUpdate: () => controls.update()
     });
 
-    // Abrir pestaña de hotspots en el panel si está en otra
+    // Cambiar automáticamente a la pestaña de puntos clave en el panel
     const tabBtn = document.querySelector('[data-tab="hotspots"]');
     if (tabBtn) tabBtn.click();
 }
 
-// --- INDICADORES ACTIVOS DE NAVEGACIÓN ---
-function updateActiveNavIndicators(activeKey) {
-    // Bottom cards
-    document.querySelectorAll('.model-card-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.model === activeKey);
-    });
-}
-
-// --- CONFIGURACIÓN DE EVENTOS DE INTERFAZ ---
+// --- 6. EVENTOS DE LA INTERFAZ DE USUARIO ---
 function setupUIEvents() {
-    // Menú Superior Dropdown
-    document.querySelectorAll('[data-model]').forEach(btn => {
+    // Selección de modelo (Tarjetas inferiores)
+    document.querySelectorAll('.model-card-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             const key = btn.dataset.model;
@@ -564,104 +634,40 @@ function setupUIEvents() {
         });
     });
 
-    // Pestañas del Panel Lateral (Ficha, Hotspots, Galería)
+    // Pestañas del Panel Lateral
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            
+
             btn.classList.add('active');
-            const targetTab = document.getElementById(`tab-${btn.dataset.tab}`);
-            if (targetTab) targetTab.classList.add('active');
+            const target = document.getElementById(`tab-${btn.dataset.tab}`);
+            if (target) target.classList.add('active');
         });
     });
 
-    // Colapsar / Expandir Panel Lateral
+    // Ocultar / Mostrar Panel Lateral
     const togglePanelBtn = document.getElementById('toggle-panel-btn');
     const sidePanel = document.getElementById('side-panel');
     if (togglePanelBtn && sidePanel) {
         togglePanelBtn.addEventListener('click', () => {
             sidePanel.classList.toggle('collapsed');
-            togglePanelBtn.innerHTML = sidePanel.classList.contains('collapsed') 
-                ? '<span>📖</span> Ver Ficha' 
+            togglePanelBtn.innerHTML = sidePanel.classList.contains('collapsed')
+                ? '<span>📖</span> Ver Ficha'
                 : '<span>✕</span> Ocultar';
         });
     }
 
-    // --- BARRA DE HERRAMIENTAS 3D ---
-    // Selector de Atmósfera (Día, Atardecer, Noche)
+    // Selector de Atmósfera (Día, Ocaso, Noche)
     document.querySelectorAll('.btn-atmosphere').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.btn-atmosphere').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             const mode = btn.dataset.mode;
-            const skyTexture = mode === 'sunset'
-                ? sunsetSkyTexture
-                : mode === 'night'
-                    ? nightSkyTexture
-                    : originalSkyTexture;
-            setAtmosphere(mode, skyTexture);
+            const sky = mode === 'sunset' ? sunsetSkyTexture : mode === 'night' ? nightSkyTexture : originalSkyTexture;
+            setAtmosphere(mode, sky);
         });
     });
-
-    // Vistas Rápidas de Cámara
-    document.querySelectorAll('.btn-camera-view').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const viewName = btn.dataset.view;
-            const currentData = modelDatabase[currentModelKey];
-            if (currentData && currentData.views && currentData.views[viewName]) {
-                const view = currentData.views[viewName];
-                gsap.to(camera.position, {
-                    x: view.cam.x,
-                    y: view.cam.y,
-                    z: view.cam.z,
-                    duration: 1.3,
-                    ease: "power2.inOut"
-                });
-                gsap.to(controls.target, {
-                    x: view.target.x,
-                    y: view.target.y,
-                    z: view.target.z,
-                    duration: 1.3,
-                    ease: "power2.inOut",
-                    onUpdate: () => controls.update()
-                });
-            }
-        });
-    });
-
-    // Giro Automático 360° (Turntable)
-    const btnTurntable = document.getElementById('btn-turntable');
-    if (btnTurntable) {
-        btnTurntable.addEventListener('click', () => {
-            controls.autoRotate = !controls.autoRotate;
-            btnTurntable.classList.toggle('active', controls.autoRotate);
-        });
-    }
-
-    // Modo Wireframe / Rayos X
-    const btnWireframe = document.getElementById('btn-wireframe');
-    if (btnWireframe) {
-        btnWireframe.addEventListener('click', () => {
-            const currentMesh = modelDatabase[currentModelKey]?.mesh;
-            const isWf = toggleWireframe(currentMesh);
-            btnWireframe.classList.toggle('active', isWf);
-        });
-    }
-
-    // Captura de Pantalla HD
-    const btnScreenshot = document.getElementById('btn-screenshot');
-    if (btnScreenshot) {
-        btnScreenshot.addEventListener('click', () => {
-            // Render limpio antes de capturar
-            renderer.render(scene, camera);
-            const dataURL = renderer.domElement.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `Tiwanaku_3D_${currentModelKey}_${Date.now()}.png`;
-            link.href = dataURL;
-            link.click();
-        });
-    }
 
     // Pantalla Completa
     const btnFullscreen = document.getElementById('btn-fullscreen');
@@ -675,7 +681,7 @@ function setupUIEvents() {
         });
     }
 
-    // Modales (Ubicación y Guía)
+    // Modal de Ubicación e Historia
     const btnLocation = document.getElementById('nav-location');
     const modalLocation = document.getElementById('modal-location');
     const modalLocationClose = document.getElementById('modal-location-close');
@@ -697,18 +703,22 @@ function setupUIEvents() {
     }
 }
 
-// --- BUCLE DE ANIMACIÓN Y RENDER ---
+// --- 7. BUCLE DE ANIMACIÓN (TICK DE RENDERIZADO) ---
 function animate() {
+    // Solicita al navegador ejecutar esta función antes del siguiente repintado de pantalla (~60fps)
     requestAnimationFrame(animate);
-    
+
+    // 1. Actualiza la amortiguación e inercia de los controles del mouse
     controls.update();
-    updateParticles();
+
+    // 2. Proyecta las posiciones 3D de los hotspots a coordenadas 2D de la pantalla
     updateHotspotsPositions();
 
+    // 3. Dibuja la escena con la cámara activa en el contexto WebGL
     renderer.render(scene, camera);
 }
 
-// Redimensionamiento responsivo de ventana
+// Ajuste automático al redimensionar ventana (Responsive 3D)
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -716,6 +726,6 @@ window.addEventListener('resize', () => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-// Iniciar aplicación
+// Arrancar aplicación
 init();
 animate();
