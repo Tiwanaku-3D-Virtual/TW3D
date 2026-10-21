@@ -3,10 +3,46 @@ import gsap from 'gsap';
 import { createScene } from './scene.js';
 import { loadModel } from './loaders/modelLoader.js';
 import { loadTexture } from './loaders/textureLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { FilmPass } from 'three/addons/postprocessing/FilmPass.js';
+import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // --- 1. INICIALIZACIÓN DEL ENTORNO 3D ---
 const container = document.getElementById('webgl-container');
 const { scene, camera, renderer, controls, setAtmosphere } = createScene(container);
+
+// --- CONFIGURACIÓN DE POSTPROCESAMIENTO (EFFECT COMPOSER) ---
+const composer = new EffectComposer(renderer);
+
+// 1. RenderPass principal para la escena y cámara
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+// 2. OutlinePass aplicado al modelo del Chachapuma con delineado rojo
+const outlinePass = new OutlinePass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    scene,
+    camera,
+    []
+);
+// Ajustes del contorno (según especificación con delineado rojo brillante)
+outlinePass.edgeStrength = 25.0; // Intensidad
+outlinePass.edgeThickness = 5.0; // Grosor
+outlinePass.visibleEdgeColor.set("#ff0000"); // Delineado rojo
+outlinePass.hiddenEdgeColor.set("#003300"); // Color borde oculto
+outlinePass.enabled = false; // Se activa cuando se selecciona el Chachapuma
+composer.addPass(outlinePass);
+
+// 3. FilmPass para el modo noche ("cuando todos los objetos están oscuros")
+const filmPass = new FilmPass(50, 0, 0, false);
+filmPass.enabled = false; // Se activa únicamente con el botón de la noche
+composer.addPass(filmPass);
+
+// 4. OutputPass (Aplica mapeo tonal ACESFilmic y conversión a espacio de color sRGB)
+const outputPass = new OutputPass();
+composer.addPass(outputPass);
 
 // Referencias a elementos del DOM (UI)
 const loadingScreen = document.getElementById('loading-screen');
@@ -480,6 +516,17 @@ function switchModel(modelKey) {
         item.mesh.visible = (item === selectedData);
     });
 
+    // Control de OutlinePass con delineado rojo para el modelo Chachapuma
+    if (outlinePass) {
+        if (modelKey === 'chachapuma' && modelDatabase.chachapuma && modelDatabase.chachapuma.mesh) {
+            outlinePass.selectedObjects = [modelDatabase.chachapuma.mesh];
+            outlinePass.enabled = true;
+        } else {
+            outlinePass.selectedObjects = [];
+            outlinePass.enabled = false;
+        }
+    }
+
     // 2. Actualizar textos de la ficha arqueológica
     if (panelTitle) panelTitle.innerText = selectedData.title;
     if (panelSubtitle) panelSubtitle.innerText = selectedData.subtitle;
@@ -666,6 +713,11 @@ function setupUIEvents() {
             const mode = btn.dataset.mode;
             const sky = mode === 'sunset' ? sunsetSkyTexture : mode === 'night' ? nightSkyTexture : originalSkyTexture;
             setAtmosphere(mode, sky);
+
+            // Activar FilmPass cuando se pulsa el botón de la noche y todos los objetos están oscuros
+            if (filmPass) {
+                filmPass.enabled = (mode === 'night');
+            }
         });
     });
 
@@ -714,8 +766,8 @@ function animate() {
     // 2. Proyecta las posiciones 3D de los hotspots a coordenadas 2D de la pantalla
     updateHotspotsPositions();
 
-    // 3. Dibuja la escena con la cámara activa en el contexto WebGL
-    renderer.render(scene, camera);
+    // 3. Dibuja la escena con postprocesamiento (RenderPass, OutlinePass, FilmPass y OutputPass)
+    composer.render();
 }
 
 // Ajuste automático al redimensionar ventana (Responsive 3D)
@@ -724,6 +776,12 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    if (outlinePass) {
+        outlinePass.setSize(window.innerWidth, window.innerHeight);
+    }
 });
 
 // Arrancar aplicación

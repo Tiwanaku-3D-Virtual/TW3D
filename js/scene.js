@@ -86,7 +86,10 @@ export function createScene(container) {
             sunLight.position.set(12, 18, 12);
             hemiLight.color.setHex(0xddeeff);
             hemiLight.groundColor.setHex(0x5a4833);
+            hemiLight.intensity = 0.7;
             ambientLight.color.setHex(0xffeedd);
+            ambientLight.intensity = 0.35;
+            fillLight.intensity = 0.6;
             renderer.toneMappingExposure = 1.15;
         } else if (mode === 'sunset') {
             sunLight.color.setHex(0xff7722);
@@ -94,16 +97,22 @@ export function createScene(container) {
             sunLight.position.set(20, 6, -10);
             hemiLight.color.setHex(0xff9944);
             hemiLight.groundColor.setHex(0x3a1e12);
+            hemiLight.intensity = 0.7;
             ambientLight.color.setHex(0xff6622);
+            ambientLight.intensity = 0.35;
+            fillLight.intensity = 0.5;
             renderer.toneMappingExposure = 1.25;
         } else if (mode === 'night') {
-            sunLight.color.setHex(0x7799dd);
-            sunLight.intensity = 0.85;
+            sunLight.color.setHex(0x4466aa);
+            sunLight.intensity = 0.3; // Noche oscura para resaltar el efecto FilmPass
             sunLight.position.set(-10, 15, 10);
-            hemiLight.color.setHex(0x223366);
-            hemiLight.groundColor.setHex(0x050a14);
-            ambientLight.color.setHex(0x1a2544);
-            renderer.toneMappingExposure = 1.0;
+            hemiLight.color.setHex(0x18223c);
+            hemiLight.groundColor.setHex(0x050810);
+            hemiLight.intensity = 0.3;
+            ambientLight.color.setHex(0x0e1726);
+            ambientLight.intensity = 0.15;
+            fillLight.intensity = 0.1;
+            renderer.toneMappingExposure = 0.85;
         }
     }
 
