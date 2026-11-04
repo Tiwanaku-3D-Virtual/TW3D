@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
 /**
  * Inicializa y configura el núcleo del entorno 3D (Escena, Cámara, Renderizador, Luces y Partículas).
@@ -8,6 +9,22 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 export function createScene(container) {
     // 1. Escena principal
     const scene = new THREE.Scene();
+
+    // HDRI equirectangular: sirve como fondo visible y como iluminación ambiental.
+    let hdrEnvironment = null;
+    const hdrReady = new RGBELoader()
+        .loadAsync('assets/textures/monta%C3%B1as.hdr')
+        .then((texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            hdrEnvironment = texture;
+            scene.background = texture;
+            scene.environment = texture;
+            return texture;
+        })
+        .catch((error) => {
+            console.error('No se pudo cargar assets/textures/montañas.hdr:', error);
+            return null;
+        });
 
     // 2. Cámara de perspectiva (FOV: 45°, Aspecto adaptativo, Planos de corte: 0.1m a 1500m)
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
@@ -77,8 +94,9 @@ export function createScene(container) {
      * Cambia la iluminación, cielo y tonalidad general según el modo atmosférico seleccionado.
      */
     function setAtmosphere(mode, skyTexture = null) {
-        scene.background = skyTexture;
-        scene.environment = mode === 'day' ? skyTexture : null;
+        const selectedSky = skyTexture || hdrEnvironment;
+        scene.background = selectedSky;
+        scene.environment = mode === 'day' ? selectedSky : null;
 
         if (mode === 'day') {
             sunLight.color.setHex(0xfff3d6);
@@ -121,6 +139,7 @@ export function createScene(container) {
         camera,
         renderer,
         controls,
-        setAtmosphere
+        setAtmosphere,
+        hdrReady
     };
 }

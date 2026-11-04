@@ -11,7 +11,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // --- 1. INICIALIZACIÓN DEL ENTORNO 3D ---
 const container = document.getElementById('webgl-container');
-const { scene, camera, renderer, controls, setAtmosphere } = createScene(container);
+const { scene, camera, renderer, controls, setAtmosphere, hdrReady } = createScene(container);
 
 // --- CONFIGURACIÓN DE POSTPROCESAMIENTO (EFFECT COMPOSER) ---
 const composer = new EffectComposer(renderer);
@@ -91,39 +91,41 @@ const ARCHAEOLOGY_DATA = {
         image: "assets/images/sungate_preview.jpg",
         imageCaption: "Friso tallado en andesita con la deidad central Viracocha.",
         desc: "Este monumental portal lítico monolítico es la cumbre del arte escultórico y astronómico de Tiwanaku. Tallado a partir de una sola pieza de roca andesita de más de 10 toneladas, funcionaba como un calendario solar de alta precisión. En el centro del dintel destaca el 'Señor de los Báculos' (Viracocha), rodeado por 48 figuras aladas en relieve.",
-        camDefault: { x: 0, y: 1.8, z: 6.0 },
-        camTarget: { x: 0, y: 1.5, z: 0 },
+        // La Puerta del Sol tiene el frente en el plano YZ (normal sobre X).
+        // Se centra el objetivo en la malla y se mira perpendicularmente desde +X.
+        camDefault: { x: 6.0, y: 1.8, z: 0.0 },
+        camTarget: { x: -0.34, y: 1.5, z: 0.0 },
         hotspots: [
             {
                 id: "sg-viracocha",
                 title: "El Señor de los Báculos",
-                pos: new THREE.Vector3(0.0, 2.2, 0.4),
-                camPos: new THREE.Vector3(0, 2.2, 2.2),
-                targetPos: new THREE.Vector3(0, 2.2, 0),
+                pos: new THREE.Vector3(0.08, 2.2, 0.0),
+                camPos: new THREE.Vector3(1.86, 2.2, 0.0),
+                targetPos: new THREE.Vector3(-0.34, 2.2, 0.0),
                 desc: "Figura central que representa a Viracocha, la deidad creadora andina. De su cabeza emanan rayos solares y porta dos cetros rematados con cabezas de cóndor."
             },
             {
                 id: "sg-winged",
                 title: "Friso de Hombres Alados",
-                pos: new THREE.Vector3(1.1, 2.0, 0.4),
-                camPos: new THREE.Vector3(1.1, 2.0, 2.2),
-                targetPos: new THREE.Vector3(1.1, 2.0, 0),
+                pos: new THREE.Vector3(0.08, 2.0, 1.1),
+                camPos: new THREE.Vector3(1.86, 2.0, 1.1),
+                targetPos: new THREE.Vector3(-0.34, 2.0, 1.1),
                 desc: "48 figuras aladas en 3 niveles, arrodilladas en reverencia hacia la deidad central. Representan sacerdotes y mensajeros celestiales mitad humanos y mitad cóndores."
             },
             {
                 id: "sg-calendar",
                 title: "Greca Calendárica",
-                pos: new THREE.Vector3(0.0, 1.45, 0.4),
-                camPos: new THREE.Vector3(0, 1.45, 1.8),
-                targetPos: new THREE.Vector3(0, 1.45, 0),
+                pos: new THREE.Vector3(0.08, 1.45, 0.0),
+                camPos: new THREE.Vector3(1.46, 1.45, 0.0),
+                targetPos: new THREE.Vector3(-0.34, 1.45, 0.0),
                 desc: "Banda inferior con meandros escalonados y trompetistas solares, interpretada como un sofisticado registro del ciclo anual de 365 días y equinoccios."
             },
             {
                 id: "sg-portal",
                 title: "Vano y Alineación Solar",
-                pos: new THREE.Vector3(0.0, 0.6, 0.0),
-                camPos: new THREE.Vector3(0, 0.9, 4.0),
-                targetPos: new THREE.Vector3(0, 0.8, 0),
+                pos: new THREE.Vector3(0.08, 0.6, 0.0),
+                camPos: new THREE.Vector3(3.66, 0.9, 0.0),
+                targetPos: new THREE.Vector3(-0.34, 0.8, 0.0),
                 desc: "Vano tallado con perfecta verticalidad que permitía el paso de los rayos solares durante el amanecer ceremonial del solsticio de invierno (Año Nuevo Andino)."
             }
         ]
@@ -278,11 +280,15 @@ function createFallbackPyramid() {
 // --- 3. CARGA ASÍNCRONA DE RECURSOS ---
 async function init() {
     try {
-        // Carga de Texturas de Cielo (Fondos Equirectangulares)
-        originalSkyTexture = await loadTexture('assets/textures/cielos.png', {
-            colorSpace: THREE.SRGBColorSpace,
-            mapping: THREE.EquirectangularReflectionMapping
-        });
+        // El HDRI se carga desde createScene y se usa como cielo e iluminación diurna.
+        originalSkyTexture = await hdrReady;
+        if (!originalSkyTexture) {
+            // Mantiene el cielo anterior como respaldo si el archivo HDR no está disponible.
+            originalSkyTexture = await loadTexture('assets/textures/cielos.png', {
+                colorSpace: THREE.SRGBColorSpace,
+                mapping: THREE.EquirectangularReflectionMapping
+            });
+        }
         scene.background = originalSkyTexture;
         scene.environment = originalSkyTexture;
         updateProgress();
