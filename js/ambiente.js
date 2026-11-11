@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { loadLocalModel } from './modelos-3d.js';
 
 // La ondulación comienza fuera del recinto para conservar una explanada estable.
 export function terrainHeight(x,z){
@@ -8,62 +9,146 @@ export function terrainHeight(x,z){
   return waves*fade;
 }
 
-export function createTerrain(){
-  const geometry=new THREE.PlaneGeometry(500,500,180,180);
-  const pos=geometry.attributes.position;const colors=[];const color=new THREE.Color();
-  const indices=[];const rowSize=181;
-  for(let i=0;i<pos.count;i++){
-    const x=pos.getX(i),z=-pos.getY(i),height=terrainHeight(x,z);
-    pos.setZ(i,height);
+function createTerrainPatch({size,segments,holeSize=0,patioHole=false}){
+  const geometry=new THREE.PlaneGeometry(size,size,segments,segments);
+  const positions=geometry.attributes.position;
+  const uvs=geometry.attributes.uv;
+  const colors=new Float32Array(positions.count*3);
+  const normals=new Float32Array(positions.count*3);
+  const indices=[];
+  const rowSize=segments+1;
+  const color=new THREE.Color();
+  const sampleStep=.5;
+  const worldSize=2000;
+  const worldHalf=worldSize/2;
+
+  for(let i=0;i<positions.count;i++){
+    const x=positions.getX(i);
+    const z=-positions.getY(i);
+    const height=terrainHeight(x,z);
+    positions.setZ(i,height);
+
+    // Mantiene la misma escala de textura entre el terreno cercano y el lejano.
+    uvs.setXY(i,(x+worldHalf)/worldSize,(worldHalf-z)/worldSize);
+
     const variation=(Math.sin(x*.09)*Math.cos(z*.07)+1)*.035+height*.025;
-    color.setRGB(.48+variation,.43+variation*.82,.32+variation*.52);colors.push(color.r,color.g,color.b);
+    color.setRGB(.9+variation*.55,.82+variation*.5,.68+variation*.4);
+    colors[i*3]=color.r;colors[i*3+1]=color.g;colors[i*3+2]=color.b;
+
+    // Normales compartidas entre niveles para evitar una costura de iluminación.
+    const slopeX=(terrainHeight(x+sampleStep,z)-terrainHeight(x-sampleStep,z))/(sampleStep*2);
+    const slopeZ=(terrainHeight(x,z+sampleStep)-terrainHeight(x,z-sampleStep))/(sampleStep*2);
+    const normalLength=Math.sqrt(slopeX*slopeX+slopeZ*slopeZ+1);
+    normals[i*3]=-slopeX/normalLength;
+    normals[i*3+1]=slopeZ/normalLength;
+    normals[i*3+2]=1/normalLength;
   }
-  // Se deja abierta la huella del patio para que el terreno no tape su interior hundido.
-  for(let row=0;row<180;row++)for(let col=0;col<180;col++){
+
+  for(let row=0;row<segments;row++)for(let col=0;col<segments;col++){
     const a=row*rowSize+col,b=(row+1)*rowSize+col,c=b+1,d=a+1;
-    const centerX=(pos.getX(a)+pos.getX(c))*.5,centerZ=-(pos.getY(a)+pos.getY(c))*.5;
-    if(Math.abs(centerX)<14.1&&Math.abs(centerZ)<14.1)continue;
+    const centerX=(positions.getX(a)+positions.getX(c))*.5;
+    const centerZ=-(positions.getY(a)+positions.getY(c))*.5;
+    if(holeSize&&Math.abs(centerX)<holeSize&&Math.abs(centerZ)<holeSize)continue;
+    if(patioHole&&Math.abs(centerX)<14.1&&Math.abs(centerZ)<14.1)continue;
     indices.push(a,b,d,b,c,d);
   }
+
   geometry.setIndex(indices);
-  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();
-  const material=new THREE.MeshStandardMaterial({color:'#ffffff',vertexColors:true,roughness:1});
-  const ground=new THREE.Mesh(geometry,material);ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;ground.name='terreno-altiplanico';return ground;
+  geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  geometry.setAttribute('normal',new THREE.BufferAttribute(normals,3));
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
-function createSky(scene){
-  const material=new THREE.ShaderMaterial({
-    uniforms:{uMode:{value:0}},side:THREE.BackSide,depthWrite:false,toneMapped:true,
-    vertexShader:`varying vec3 vDirection; void main(){ vec4 worldPosition=modelMatrix*vec4(position,1.0); vDirection=normalize(worldPosition.xyz-cameraPosition); gl_Position=projectionMatrix*viewMatrix*worldPosition; }`,
-    fragmentShader:`uniform float uMode; varying vec3 vDirection; void main(){
-      float h=clamp(vDirection.y*.5+.5,0.0,1.0);
-      vec3 dayH=vec3(.72,.79,.80),dayZ=vec3(.18,.43,.67);
-      vec3 eveH=vec3(.96,.56,.32),eveZ=vec3(.22,.27,.48);
-      vec3 nightH=vec3(.10,.16,.25),nightZ=vec3(.015,.035,.09);
-      vec3 horizon=mix(mix(dayH,eveH,step(.5,uMode)),nightH,step(1.5,uMode));
-      vec3 zenith=mix(mix(dayZ,eveZ,step(.5,uMode)),nightZ,step(1.5,uMode));
-      float blend=smoothstep(.05,.92,h);vec3 sky=mix(horizon,zenith,blend);
-      float glow=exp(-pow((h-.50)*9.0,2.0));
-      sky+=mix(vec3(.10,.08,.04),mix(vec3(.38,.14,.04),vec3(0.0),step(1.5,uMode)),uMode>1.0?1.0:0.0)*glow;
-      gl_FragColor=vec4(sky,1.0);
-      #include <tonemapping_fragment>
-      #include <colorspace_fragment>
-    }`
+export function createTerrain(){
+  const texture=new THREE.TextureLoader().load('assets/textures/GroundDirtRocky020_COL_2K.jpg');
+  texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(152,152);
+  const material=new THREE.MeshStandardMaterial({map:texture,color:'#ffffff',vertexColors:true,roughness:1});
+  const ground=new THREE.Group();
+  ground.name='terreno-altiplanico';
+
+  const farGround=new THREE.Mesh(createTerrainPatch({size:2000,segments:160,holeSize:150}),material);
+  farGround.rotation.x=-Math.PI/2;farGround.position.y=-.18;farGround.receiveShadow=true;farGround.name='terreno-lejano';
+  const nearGround=new THREE.Mesh(createTerrainPatch({size:300,segments:60,patioHole:true}),material);
+  nearGround.rotation.x=-Math.PI/2;nearGround.position.y=-.18;nearGround.receiveShadow=true;nearGround.name='terreno-cercano';
+  ground.add(farGround,nearGround);
+  return ground;
+}
+
+const skyPaths = [
+  'assets/textures/cielos.webp',
+  'assets/textures/amanecer.webp',
+  'assets/textures/cold-night-equirect.webp'
+];
+
+function loadEquirectTexture(path, maxDimension = 2048) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      let source = img;
+      if (img.width > maxDimension || img.height > maxDimension) {
+        const aspect = img.width / img.height;
+        const targetW = maxDimension;
+        const targetH = Math.round(maxDimension / aspect);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+        source = canvas;
+      }
+      const texture = new THREE.CanvasTexture(source);
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+      resolve(texture);
+    };
+    img.onerror = (err) => {
+      console.warn('Error al cargar textura de cielo:', path, err);
+      const tex = new THREE.TextureLoader().load(path);
+      tex.mapping = THREE.EquirectangularReflectionMapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      resolve(tex);
+    };
+    img.src = path;
   });
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(800,32,16),material);dome.name='cielo-gradiente';dome.frustumCulled=false;dome.renderOrder=-1000;scene.add(dome);
-  const starPositions=[];let seed=91827;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-  for(let i=0;i<1500;i++){const y=random()*2-1;const angle=random()*Math.PI*2;const radius=520;const planar=Math.sqrt(1-y*y);starPositions.push(Math.cos(angle)*planar*radius,y*radius,Math.sin(angle)*planar*radius);}
-  const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.Float32BufferAttribute(starPositions,3));
-  const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:'#fff5d2',size:1.4,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false}));stars.name='estrellas';stars.frustumCulled=false;scene.add(stars);
-  return {material,stars};
 }
 
-function createLake(scene){
-  const geometry=new THREE.PlaneGeometry(260,92,78,28);geometry.rotateX(-Math.PI/2);
-  const base=geometry.attributes.position.array.slice();
-  const material=new THREE.MeshBasicMaterial({color:'#588da1',transparent:true,opacity:.78,side:THREE.DoubleSide,depthWrite:false,fog:false});
-  const lake=new THREE.Mesh(geometry,material);lake.position.set(-20,1.05,-148);lake.name='lago-titicaca';lake.receiveShadow=false;lake.frustumCulled=true;scene.add(lake);
-  return {geometry,base};
+function createStars(scene) {
+  const starPositions = [];
+  let seed = 91827;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  for (let i = 0; i < 1500; i++) {
+    const y = random() * 2 - 1;
+    const angle = random() * Math.PI * 2;
+    const radius = 520;
+    const planar = Math.sqrt(1 - y * y);
+    starPositions.push(Math.cos(angle) * planar * radius, y * radius, Math.sin(angle) * planar * radius);
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+  const stars = new THREE.Points(
+    starGeo,
+    new THREE.PointsMaterial({
+      color: '#fff5d2',
+      size: 1.4,
+      sizeAttenuation: false,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    })
+  );
+  stars.name = 'estrellas';
+  stars.frustumCulled = false;
+  scene.add(stars);
+  return stars;
 }
 
 function createIchu(scene){
@@ -86,52 +171,106 @@ function createIchu(scene){
     }
   }
   blades.forEach(mesh=>{mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=false;mesh.receiveShadow=false;mesh.name='ichu-instanciado';scene.add(mesh);});
-  return {blades,material};
+  return {blades,material,active:true};
 }
 
-function createLlamas(scene){
-  const centers=[[-77,-30],[-77,30],[77,-30],[77,30],[-30,-60],[30,-60],[-30,60],[30,60]];
-  const fur=new THREE.MeshStandardMaterial({color:'#c7b99a',roughness:.9});
-  const dark=new THREE.MeshStandardMaterial({color:'#554638',roughness:.95});
-  const body=new THREE.InstancedMesh(new THREE.BoxGeometry(1.45,.95,.78),fur,centers.length);
-  const neck=new THREE.InstancedMesh(new THREE.CylinderGeometry(.18,.25,1.12,6),fur,centers.length);
-  const head=new THREE.InstancedMesh(new THREE.BoxGeometry(.48,.42,.48),fur,centers.length);
-  const muzzle=new THREE.InstancedMesh(new THREE.BoxGeometry(.30,.22,.3),dark,centers.length);
-  const ears=new THREE.InstancedMesh(new THREE.ConeGeometry(.12,.55,5),dark,centers.length*2);
-  const legs=new THREE.InstancedMesh(new THREE.BoxGeometry(.18,.78,.2),dark,centers.length*4);
-  const matrices=[];const d=new THREE.Object3D();
-  centers.forEach(([x,z],i)=>{
-    const y=terrainHeight(x,z)-.18;const baseY=y+.65;
-    d.position.set(x,baseY,z);d.rotation.set(0,(i%5)*.72,0);d.updateMatrix();body.setMatrixAt(i,d.matrix);
-    d.position.set(x+.38,baseY+.69,z);d.rotation.set(.08,0,.12);d.updateMatrix();neck.setMatrixAt(i,d.matrix);
-    const headPos=new THREE.Vector3(x+.39,baseY+1.27,z);matrices.push({x,z,baseY,angle:(i%2)*Math.PI,headPos});
-    d.position.copy(headPos);d.rotation.set(0,(i%5)*.72,0);d.updateMatrix();head.setMatrixAt(i,d.matrix);
-    d.position.set(x+.55,baseY+1.22,z);d.updateMatrix();muzzle.setMatrixAt(i,d.matrix);
-    for(let ear=0;ear<2;ear++){d.position.set(x+.30,baseY+1.68,z+(ear?-.14:.14));d.rotation.set(.1,0,ear?-.12:.12);d.updateMatrix();ears.setMatrixAt(i*2+ear,d.matrix);}
-    for(let leg=0;leg<4;leg++){const lx=x+(leg<2?-.45:.45),lz=z+(leg%2?-.22:.22);d.position.set(lx,y+.39,lz);d.rotation.set(0,0,0);d.updateMatrix();legs.setMatrixAt(i*4+leg,d.matrix);}
-  });
-  [body,neck,head,muzzle,ears,legs].forEach(mesh=>{mesh.castShadow=true;mesh.receiveShadow=true;mesh.name='llamas-instanciadas';mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);});
-  return {head,matrices};
+async function replaceIchuWithModel(scene, fallback){
+  try{
+    const model=await loadLocalModel('assets/models/ichu.glb',{fitSize:4,tint:'#779c48',tintMode:'replace'});
+    model.updateWorldMatrix(true,true);
+    const count=120,positions=[];let seed=87231;
+    const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    for(let i=0;i<count;i++){
+      let x=0,z=0;
+      for(let attempt=0;attempt<24;attempt++){
+        x=(random()-.5)*220;z=(random()-.5)*180;
+        const inTemple=Math.abs(x)<17&&Math.abs(z)<17;
+        const inKalasasaya=x>-64&&x<-20&&z>-16&&z<11;
+        const inAkapana=x>-64&&x<-25&&z>14&&z<55;
+        const inPumaPunku=x>28&&x<59&&z>15&&z<47;
+        const inSunGate=x>-5&&x<5&&z>-30&&z<-18;
+        if(!inTemple&&!inKalasasaya&&!inAkapana&&!inPumaPunku&&!inSunGate&&z>-103)break;
+      }
+      positions.push([x,terrainHeight(x,z)-.18,z,random()*Math.PI*2,1.05+random()*.55]);
+    }
+    const detailMeshes=[];model.traverse((node)=>{if(node.isMesh)detailMeshes.push(node);});
+    detailMeshes.forEach((source,index)=>{
+      const geometry=source.geometry.clone().applyMatrix4(source.matrixWorld);
+      const mesh=new THREE.InstancedMesh(geometry,source.material,count);
+      mesh.name=`ichu-glb-instanciado-${index+1}`;
+      const dummy=new THREE.Object3D();
+      positions.forEach(([x,y,z,rotation,scale],instance)=>{
+        dummy.position.set(x,y,z);dummy.rotation.set(0,rotation,0);dummy.scale.setScalar(scale);dummy.updateMatrix();mesh.setMatrixAt(instance,dummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=false;mesh.receiveShadow=false;scene.add(mesh);
+    });
+    fallback.blades.forEach((mesh)=>scene.remove(mesh));
+    fallback.blades[0]?.geometry.dispose();fallback.material.dispose();
+    fallback.active=false;
+  }catch(error){
+    console.warn('Se conserva el ichu generado si no se puede cargar el modelo local.',error);
+  }
 }
 
-export function createAmbiente(scene,sun){
-  const sky=createSky(scene);const lake=createLake(scene);const grass=createIchu(scene);const llamas=createLlamas(scene);
-  let mode=0;
-  const setTime=value=>{
-    mode=((value%3)+3)%3;sky.material.uniforms.uMode.value=mode;
-    const colors=['#a9b4ae','#bb8165','#17243c'];scene.fog.color.set(colors[mode]);
-    sun.color.set(['#fff0ce','#ffb56d','#94aeda'][mode]);sun.intensity=[2,1.55,.18][mode];
-    sun.position.set([-35,-65,-20][mode],[55,22,-18][mode],[24,-55,30][mode]);
-    sky.stars.material.opacity=mode===2 ? .82 : 0;
+export function createAmbiente(scene, sun, onChange = () => {}) {
+  const skyTextures = [null, null, null];
+  const stars = createStars(scene);
+  const grass = createIchu(scene);
+  replaceIchuWithModel(scene, grass);
+  let mode = 0;
+
+  async function getOrLoadSkyTexture(idx) {
+    if (skyTextures[idx]) return skyTextures[idx];
+    const tex = await loadEquirectTexture(skyPaths[idx]);
+    skyTextures[idx] = tex;
+    return tex;
+  }
+
+  const applySky = (targetMode) => {
+    if (skyTextures[targetMode]) {
+      scene.background = skyTextures[targetMode];
+      scene.environment = skyTextures[targetMode];
+      scene.environmentIntensity = [0.45, 0.40, 0.22][targetMode];
+      onChange();
+    } else {
+      getOrLoadSkyTexture(targetMode).then((tex) => {
+        if (mode === targetMode) {
+          scene.background = tex;
+          scene.environment = tex;
+          scene.environmentIntensity = [0.45, 0.40, 0.22][targetMode];
+          onChange();
+        }
+      });
+    }
+  };
+
+  const setTime = (value) => {
+    mode = ((value % 3) + 3) % 3;
+    applySky(mode);
+
+    const colors = ['#9cb2be', '#b46644', '#0b1322'];
+    if (scene.fog) {
+      scene.fog.color.set(colors[mode]);
+      scene.fog.near = [140, 130, 110][mode];
+      scene.fog.far = [520, 480, 420][mode];
+    }
+
+    sun.color.set(['#fff0ce', '#ff9e56', '#7d9bc6'][mode]);
+    sun.intensity = [2.2, 1.7, 0.35][mode];
+    sun.position.set([-35, -65, -20][mode], [55, 22, -18][mode], [24, -55, 30][mode]);
+    stars.material.opacity = mode === 2 ? 0.82 : 0;
+    onChange();
     return mode;
   };
-  const update=time=>{
-    const windShader=grass.material.userData.windShader;if(windShader)windShader.uniforms.uWind.value=time;
-    const pos=lake.geometry.attributes.position;const base=lake.base;
-    for(let i=0;i<pos.count;i++)pos.setY(i,base[i*3+1]+Math.sin(time*1.15+base[i*3]*.055+base[i*3+2]*.035)*.035);
-    pos.needsUpdate=true;lake.geometry.computeVertexNormals();
-    const d=new THREE.Object3D();llamas.matrices.forEach(({x,z,baseY,angle,headPos},i)=>{d.position.copy(headPos);d.rotation.set(Math.sin(time*.8+i)*.06,angle,Math.sin(time*1.25+i*1.7)*.14);d.updateMatrix();llamas.head.setMatrixAt(i,d.matrix);});llamas.head.instanceMatrix.needsUpdate=true;
+
+  const update = (time) => {
+    const windShader = grass.material.userData.windShader;
+    if (windShader) windShader.uniforms.uWind.value = time;
+    return grass.active;
   };
+
+  // Aplica inmediatamente el cielo diurno
   setTime(0);
-  return {setTime,update,get mode(){return mode;}};
+
+  return { setTime, update, get mode() { return mode; } };
 }

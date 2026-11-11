@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { createTemplete } from './templo-semisubterraneo.js';
-import { createPuertaSol } from './puerta-sol.js';
 import { createKalasasaya } from './kalasasaya.js';
 import { createAkapana } from './akapana.js';
+import { createChachapuma } from './chachapuma.js';
 import { createPumaPunku } from './puma-punku.js';
-import { createPuertaLuna, createPutuni, createKheriKala, createKantatallita, createDoublePerimeter } from './auxiliares.js';
+import { createKheriKala, createDoublePerimeter } from './auxiliares.js';
 
 export function createSitio(){
   const site=new THREE.Group();
-  site.add(createDoublePerimeter(),createAkapana(),createTemplete(),createKalasasaya(),createPuertaSol(),createPumaPunku(),createPuertaLuna(),createPutuni(),createKheriKala(),createKantatallita());
+  site.add(createDoublePerimeter(),createAkapana(),createChachapuma(),createTemplete(),createKalasasaya(),createPumaPunku(),createKheriKala());
   return site;
 }

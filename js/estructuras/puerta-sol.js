@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export function createPuertaSol() {
-  const group = new THREE.Group(); group.name = 'puerta-del-sol'; group.position.set(-42, 0, 7.5); group.userData.infoKey = 'puertaSol';
+  const group = new THREE.Group(); group.name = 'puerta-del-sol'; group.position.set(0, 0, -24); group.userData.infoKey = 'puertaSol';
   const stone = new THREE.MeshStandardMaterial({ color: '#777264', roughness: .88 });
   const relief = new THREE.MeshStandardMaterial({ color: '#918a78', roughness: .86 });
   const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x,y,z); m.castShadow = m.receiveShadow = true; group.add(m); return m; };

@@ -3,47 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#141512">
-  <meta name="description" content="Explora una sala virtual de piezas arqueológicas de Tiwanaku en 3D.">
-  <title>Tiwanaku 3D — Sala de piezas</title>
+  <meta name="theme-color" content="#171a16">
+  <meta name="description" content="Recorre y observa los modelos arqueológicos de Tiwanaku en su paisaje del Altiplano.">
+  <title>Tiwanaku 3D — Sitio arqueológico</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="galeria.css">
+  <link rel="stylesheet" href="map.css">
+  <link rel="preload" href="assets/textures/cielos.webp" as="image" crossorigin>
+  <link rel="prefetch" href="assets/textures/GroundDirtRocky020_COL_2K.jpg" as="image">
+  <link rel="prefetch" href="assets/models/SunGate.glb" as="fetch" crossorigin>
+  <link rel="prefetch" href="assets/textures/SunGate_albedo.png" as="image">
+  <link rel="prefetch" href="assets/textures/SunGate_normal.png" as="image">
+  <link rel="preload" href="assets/audio/voice_preview_narradora%20de%20god%20of%20war.mp3" as="fetch" crossorigin>
   <script type="importmap">
     {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
   </script>
 </head>
 <body>
-  <div id="gallery-canvas" aria-label="Sala tridimensional de piezas de Tiwanaku"></div>
-  <header class="gallery-header">
-    <a class="brand" href="index.html" aria-label="Sala de piezas de Tiwanaku"><span>🏛</span><span><b>TIWANAKU</b><small>SALA DE PIEZAS 3D</small></span></a>
-    <p class="gallery-intro">Patrimonio lítico y ceremonial del Altiplano</p>
-    <a class="glass-button" href="map.html">Explorar el sitio</a>
+  <!-- Pantalla de carga interactiva e inmersiva -->
+  <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+    <div class="loading-content">
+      <div class="loading-emblem">🏛️</div>
+      <div class="loading-title">TIWANAKU 3D</div>
+      <div class="loading-subtitle">MODELOS DEL ALTIPLANO ANDINO</div>
+      <div class="loading-bar-wrap">
+        <div id="loading-bar" class="loading-bar"></div>
+      </div>
+      <div id="loading-status" class="loading-status">Iniciando modelos arqueológicos…</div>
+    </div>
+  </div>
+
+  <div id="map-canvas" aria-label="Sitio arqueológico de Tiwanaku en tres dimensiones"></div>
+  <div id="story-points" class="story-points" aria-label="Puntos de historia del modelo seleccionado"></div>
+  <header class="map-header">
+    <a class="brand" href="index.html" aria-label="Volver al recorrido de Tiwanaku"><span>🏛</span><span><b>TIWANAKU</b><small>MODELOS EN EL ALTIPLANO</small></span></a>
+    <div class="header-actions">
+      <details id="model-menu" class="model-menu">
+        <summary class="glass-button">Ver modelos</summary>
+        <nav class="model-options" aria-label="Elegir modelo para observar">
+          <button type="button" data-model-focus="templo">Templete Semisubterráneo</button>
+          <button type="button" data-model-focus="kalasasaya">Kalasasaya</button>
+          <button type="button" data-model-focus="puertaSol">Puerta del Sol</button>
+          <button type="button" data-model-focus="akapana">Pirámide de Akapana</button>
+          <button type="button" data-model-focus="chachapuma">Chachapuma</button>
+          <button type="button" data-model-focus="pumaPunku">Puma Punku</button>
+          <button type="button" data-model-focus="monolito">Monolito Ponce</button>
+          <button type="button" data-model-focus="bennett">Monolito Bennett</button>
+          <button type="button" data-model-focus="kheriKala">Kheri Kala</button>
+        </nav>
+      </details>
+      <button id="btn-walk" class="glass-button" aria-label="Activar exploración a pie">Explorar a pie</button>
+      <button id="btn-narrator" class="glass-button" aria-label="Escuchar narración de la guía">🎙️ Narradora</button>
+      <button id="btn-time" class="glass-button" aria-label="Cambiar atmósfera; tecla N">☀ Día</button>
+      <button id="btn-toggle-info" class="glass-button" type="button" aria-controls="info-card" aria-expanded="true">Ocultar info</button>
+      <button id="btn-fullscreen" class="glass-button" type="button" aria-label="Activar pantalla completa" aria-pressed="false">⛶ Pantalla completa</button>
+    </div>
   </header>
-  <aside class="piece-panel" aria-live="polite">
-    <div class="eyebrow">COLECCIÓN ARQUEOLÓGICA</div>
-    <h1 id="piece-title">Puerta del Sol</h1>
-    <p id="piece-period" class="period">500–900 d.C.</p>
-    <p id="piece-material" class="material">Andesita</p>
-    <p id="piece-description">Portal monumental con dintel tallado y figura central.</p>
-    <a id="piece-map-link" class="gold-button" href="map.html">Ver en el sitio</a>
-    <p class="gallery-hint">Selecciona una pieza para examinarla · Arrastra para girar · Rueda para acercar</p>
+  <aside id="guide-dialogue" class="guide-dialogue" aria-labelledby="guide-title">
+    <button id="guide-close" class="guide-close" aria-label="Cerrar diálogo de bienvenida">×</button>
+    <div class="guide-heading"><span class="guide-avatar">🧑🏽‍🌾</span><div><div class="eyebrow">GUÍA DEL RECORRIDO</div><h2 id="guide-title">¡Bienvenida a Tiwanaku!</h2></div></div>
+    <p>Entre 500 y 1000 d.C., Tiwanaku fue una ciudad ceremonial del Altiplano.</p>
+    <p>Elige un modelo desde el menú o toca una estructura para conocer su historia.</p>
+    <div class="guide-audio-bar">
+      <button id="btn-guide-audio" class="gold-button guide-audio-btn" aria-label="Reproducir narración de la guía">
+        <span class="audio-icon">▶</span> <span class="audio-label">Escuchar narración de la guía</span>
+      </button>
+      <div id="narrator-progress-container" class="narrator-progress-container" hidden>
+        <div id="narrator-progress-bar" class="narrator-progress-bar"></div>
+      </div>
+    </div>
   </aside>
-  <div class="gallery-status" aria-live="polite"><span id="gallery-count">01 / 11</span><span>Iluminación de museo</span></div>
-  <nav class="piece-index" aria-label="Índice de piezas">
-    <button class="piece-card active" data-piece="puerta-sol" aria-pressed="true"><span>01</span><b>Puerta del Sol</b><small>Portal lítico</small></button>
-    <button class="piece-card" data-piece="ponce" aria-pressed="false"><span>02</span><b>Monolito Ponce</b><small>Estela tallada</small></button>
-    <button class="piece-card" data-piece="chakana" aria-pressed="false"><span>03</span><b>Chakana</b><small>Cruz andina</small></button>
-    <button class="piece-card" data-piece="fraile" aria-pressed="false"><span>04</span><b>Estela Fraile</b><small>Figura lítica</small></button>
-    <button class="piece-card" data-piece="qero" aria-pressed="false"><span>05</span><b>Qero cerámico</b><small>Vaso ceremonial</small></button>
-    <button class="piece-card" data-piece="vasija" aria-pressed="false"><span>06</span><b>Vasija eferjete</b><small>Cabeza-tapa</small></button>
-    <button class="piece-card" data-piece="manto" aria-pressed="false"><span>07</span><b>Manto tokapu</b><small>Textil ceremonial</small></button>
-    <button class="piece-card" data-piece="tableta" aria-pressed="false"><span>08</span><b>Tableta para rapé</b><small>Objeto ritual</small></button>
-    <button class="piece-card" data-piece="pectoral" aria-pressed="false"><span>09</span><b>Pectoral de oro</b><small>Adorno metálico</small></button>
-    <button class="piece-card" data-piece="craneo" aria-pressed="false"><span>10</span><b>Cráneo deformado</b><small>Trepanación</small></button>
-    <button class="piece-card" data-piece="clava" aria-pressed="false"><span>11</span><b>Cabeza clava</b><small>Relieve pétreo</small></button>
-  </nav>
-  <script type="module" src="js/galeria.js"></script>
+  <aside class="info-card" id="info-card" aria-live="polite">
+    <div class="eyebrow">RECORRIDO ARQUEOLÓGICO</div>
+    <h1 id="info-title">Templete Semisubterráneo</h1>
+    <p id="info-period" class="period">500–900 d.C.</p>
+    <p id="info-description">Un patio hundido rodeado por muros de piedra y cabezas clavas.</p>
+    <dl><dt>Función</dt><dd id="info-function">Espacio ceremonial y ritual.</dd><dt>Dato curioso</dt><dd id="info-curiosity">Sus muros reúnen cabezas esculpidas en distintos estilos.</dd></dl>
+    <button id="btn-detail" class="gold-button">Ver en detalle</button>
+    <p class="hint">Arrastra para girar · rueda para acercarte · toca una estructura</p>
+  </aside>
+  <aside id="nearby-card" class="nearby-card" aria-live="polite" hidden>
+    <div class="eyebrow">A TU ALREDEDOR</div>
+    <h2 id="nearby-title"></h2>
+    <p id="nearby-prompt">¿Quieres escuchar la explicación? Pulsa E.</p>
+    <div class="nearby-key-hint"><kbd>E</kbd><span>Escuchar o pausar</span></div>
+  </aside>
+  <section id="minimap-wrap" class="minimap-wrap" aria-label="Minimapa del sitio arqueológico">
+    <div class="minimap-title">MAPA DEL RECINTO</div>
+    <canvas id="mini-map" width="240" height="170" aria-label="Mapa: estructuras visitadas y ubicación del jugador"></canvas>
+    <div class="minimap-legend"><span>● Posición</span><span>✔ Visitado</span></div>
+  </section>
+  <div class="map-footer"><span>TIWANAKU · ALTIPLANO ANDINO</span><span id="interaction-help">Órbita con ratón o gestos</span></div>
+  <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
+    <section class="modal-card"><button id="modal-close" class="close-button" aria-label="Cerrar">×</button><div class="eyebrow">FICHA ARQUEOLÓGICA</div><h2 id="modal-title"></h2><p id="modal-period" class="period"></p><p id="modal-description"></p><dl><dt>Función</dt><dd id="modal-function"></dd><dt>Dato curioso</dt><dd id="modal-curiosity"></dd></dl></section>
+  </div>
+  <script type="module" src="js/mapa.js"></script>
 </body>
 </html>

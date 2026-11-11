@@ -1,18 +1,74 @@
 import * as THREE from 'three';
 
-export function createPumaPunku(){
-  const group=new THREE.Group();group.name='puma-punku';group.position.set(43,0,31);group.userData.infoKey='pumaPunku';
-  const andesite=new THREE.MeshStandardMaterial({color:'#85877f',roughness:.8,metalness:.04});
-  for(const [w,d,y] of [[27,19,.5],[24,16,1.25],[20,13,1.9]]){const platform=new THREE.Mesh(new THREE.BoxGeometry(w,.72,d),andesite);platform.position.y=y;platform.castShadow=platform.receiveShadow=true;group.add(platform);}
-  // Piezas H de corte nítido, con algunas tumbadas como vestigios en superficie.
-  const columns=new THREE.InstancedMesh(new THREE.BoxGeometry(.62,1.45,.72),andesite,30);
-  const crossbars=new THREE.InstancedMesh(new THREE.BoxGeometry(1.35,.42,.72),andesite,15);
-  const d=new THREE.Object3D();let a=0,b=0;
-  const positions=[[-8,2.8,-4],[-3,2.8,-4],[2,2.8,-4],[7,2.8,-4],[-8,2.8,1],[-3,2.8,1],[2,2.8,1],[7,2.8,1],[-7,2.65,6],[0,2.65,6],[7,2.65,6]];
-  positions.forEach(([x,y,z],i)=>{
-    const fallen=i>=8;const rotation=fallen?new THREE.Euler((Math.random()-.5)*.18,Math.random()*Math.PI,(Math.random()-.5)*.5):new THREE.Euler(0,(i%4)*.08,0);const q=new THREE.Quaternion().setFromEuler(rotation);const center=new THREE.Vector3(x,y,z);
-    for(const dx of [-.95,.95]){const local=new THREE.Vector3(dx,fallen ? .35 : .75,0).applyQuaternion(q);d.position.copy(center).add(local);d.quaternion.copy(q);d.updateMatrix();columns.setMatrixAt(a++,d.matrix);}
-    const local=new THREE.Vector3(0,fallen ? .78 : 1.15,0).applyQuaternion(q);d.position.copy(center).add(local);d.quaternion.copy(q);d.updateMatrix();crossbars.setMatrixAt(b++,d.matrix);
+export function createPumaPunku() {
+  const group = new THREE.Group();
+  group.name = 'puma-punku';
+  group.position.set(43, 0, 31);
+  group.userData.infoKey = 'pumaPunku';
+
+  // Textura pétrea de andesita 2K para las terrazas y el altar ceremonial de Puma Punku
+  const textureLoader = new THREE.TextureLoader();
+  const stoneTex = textureLoader.load('assets/textures/GroundDirtRocky020_COL_2K.jpg');
+  stoneTex.colorSpace = THREE.SRGBColorSpace;
+  stoneTex.wrapS = stoneTex.wrapT = THREE.RepeatWrapping;
+  stoneTex.repeat.set(5, 4);
+
+  const andesiteMat = new THREE.MeshStandardMaterial({
+    map: stoneTex,
+    color: '#a39987',
+    roughness: 0.82,
+    metalness: 0.03
   });
-  columns.count=a;crossbars.count=b;columns.instanceMatrix.needsUpdate=true;crossbars.instanceMatrix.needsUpdate=true;columns.castShadow=crossbars.castShadow=true;group.add(columns,crossbars);return group;
+
+  // Textura para el altar ceremonial central (losas pulidas)
+  const altarTex = textureLoader.load('assets/textures/GroundDirtRocky020_COL_2K.jpg');
+  altarTex.colorSpace = THREE.SRGBColorSpace;
+  altarTex.wrapS = altarTex.wrapT = THREE.RepeatWrapping;
+  altarTex.repeat.set(2, 2);
+
+  const altarMat = new THREE.MeshStandardMaterial({
+    map: altarTex,
+    color: '#b8ab96',
+    roughness: 0.75,
+    metalness: 0.03
+  });
+
+  // 1. Plataformas escalonadas de andesita labrada que sirven de basamento monumental
+  const platforms = [
+    { w: 28, d: 20, y: 0.25 },
+    { w: 24, d: 16, y: 0.65 },
+    { w: 19, d: 12, y: 0.95 }
+  ];
+
+  platforms.forEach(({ w, d, y }, index) => {
+    const platform = new THREE.Mesh(new THREE.BoxGeometry(w, 0.5, d), andesiteMat);
+    platform.name = `plataforma-pumapunku-${index + 1}`;
+    platform.position.y = y;
+    platform.castShadow = platform.receiveShadow = true;
+    group.add(platform);
+  });
+
+  // 2. Altar ceremonial central texturizado donde se exhiben los megalitos de Puma Punku
+  const centralAltar = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.35, 3.8), altarMat);
+  centralAltar.position.set(0, 1.35, 0);
+  centralAltar.castShadow = centralAltar.receiveShadow = true;
+  group.add(centralAltar);
+
+  // Basamento escalonado bajo el altar central
+  const altarBase = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.22, 5.2), altarMat);
+  altarBase.position.set(0, 1.22, 0);
+  altarBase.castShadow = altarBase.receiveShadow = true;
+  group.add(altarBase);
+
+  // 3. Escalinata frontal monumental de acceso a las terrazas de Puma Punku
+  const stepCount = 3;
+  for (let i = 0; i < stepCount; i++) {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.22, 0.8), altarMat);
+    step.position.set(0, 0.12 + i * 0.24, 10.8 - i * 0.75);
+    step.castShadow = step.receiveShadow = true;
+    group.add(step);
+  }
+
+  return group;
 }
+
