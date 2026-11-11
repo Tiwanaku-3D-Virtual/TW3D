@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171a16">
+  <meta name="description" content="Recorre Tiwanaku en un museo arqueológico 3D interactivo.">
+  <title>Tiwanaku 3D — Sitio arqueológico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="map.css">
+  <script type="importmap">
+    {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+  </script>
+</head>
+<body>
+  <div id="map-canvas" aria-label="Sitio arqueológico de Tiwanaku en tres dimensiones"></div>
+  <header class="map-header">
+    <a class="brand" href="index.html" aria-label="Volver al museo Tiwanaku"><span>🏛</span><span><b>TIWANAKU</b><small>MUSEO VIRTUAL 3D</small></span></a>
+    <div class="header-actions">
+      <a class="glass-button" href="index.html">Sala de museo</a>
+      <button id="btn-walk" class="glass-button" aria-label="Activar exploración a pie">Explorar a pie</button>
+      <button id="btn-time" class="glass-button" aria-label="Cambiar hora del día">☀ Día</button>
+    </div>
+  </header>
+  <aside class="info-card" id="info-card" aria-live="polite">
+    <div class="eyebrow">RECORRIDO ARQUEOLÓGICO</div>
+    <h1 id="info-title">Templete Semisubterráneo</h1>
+    <p id="info-period" class="period">500–900 d.C.</p>
+    <p id="info-description">Un patio hundido rodeado por muros de piedra y cabezas clavas.</p>
+    <dl><dt>Función</dt><dd id="info-function">Espacio ceremonial y ritual.</dd><dt>Dato curioso</dt><dd id="info-curiosity">Sus muros reúnen cabezas esculpidas en distintos estilos.</dd></dl>
+    <button id="btn-detail" class="gold-button">Ver en detalle</button>
+    <p class="hint">Arrastra para girar · rueda para acercarte · toca una estructura</p>
+  </aside>
+  <div class="map-footer"><span>TIWANAKU · ALTIPLANO ANDINO</span><span id="interaction-help">Órbita con ratón o gestos</span></div>
+  <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
+    <section class="modal-card"><button id="modal-close" class="close-button" aria-label="Cerrar">×</button><div class="eyebrow">FICHA ARQUEOLÓGICA</div><h2 id="modal-title"></h2><p id="modal-period" class="period"></p><p id="modal-description"></p><dl><dt>Función</dt><dd id="modal-function"></dd><dt>Dato curioso</dt><dd id="modal-curiosity"></dd></dl></section>
+  </div>
+  <script type="module" src="js/mapa.js"></script>
+</body>
+</html>
