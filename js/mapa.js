@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { createScene } from './escena.js';
+import { createAmbiente } from './ambiente.js';
 import { createSitio } from './estructuras/sitio.js';
 import { info } from './info.js';
 
 const container=document.querySelector('#map-canvas');
 const {scene,camera,renderer,controls,sun}=createScene(container);
 const site=createSitio(); scene.add(site);
+const environment=createAmbiente(scene,sun);const clock=new THREE.Clock();
 const raycaster=new THREE.Raycaster(); const pointer=new THREE.Vector2();
 const modal=document.querySelector('#detail-modal');
 let selected='templo';
@@ -34,8 +36,10 @@ renderer.domElement.addEventListener('pointerup',e=>{
   let node=hit.object;while(node&&node!==site&&!node.userData.infoKey)node=node.parent;
   if(node&&node.userData.infoKey&&info[node.userData.infoKey])showInfo(node.userData.infoKey,true);
 });
-let night=false;
-document.querySelector('#btn-time').addEventListener('click',e=>{night=!night;scene.background.set(night?'#17243c':'#a9b4ae');scene.fog.color.set(night?'#17243c':'#a9b4ae');sun.intensity=night ? 0.32 : 3;document.querySelector('#btn-time').textContent=night?'🌙 Noche':'☀ Día';});
-function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}
+const timeButton=document.querySelector('#btn-time');const timeLabels=['☀ Día','🌅 Ocaso','🌙 Noche'];
+function cycleTime(){const mode=environment.setTime(environment.mode+1);timeButton.textContent=timeLabels[mode];}
+timeButton.addEventListener('click',cycleTime);
+addEventListener('keydown',e=>{if(e.key.toLowerCase()==='n'&&!e.repeat)cycleTime();});
+function animate(){requestAnimationFrame(animate);controls.update();environment.update(clock.getElapsedTime());renderer.render(scene,camera);}
 animate();
 showInfo('templo');

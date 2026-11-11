@@ -10,7 +10,7 @@ export function createTemplete() {
   const span = 28;
   // Tres terrazas descienden hacia el patio; cada nivel retranquea el muro interior.
   for (let level = 0; level < 3; level++) {
-    const y0 = -4.8 + level * 1.6;
+    const y0 = -4.8 + level * 1.6 + (level === 2 ? .7 : 0);
     const inset = level * .38;
     const edge = span / 2 - inset;
     const courseCount = 2;
@@ -52,9 +52,9 @@ export function createTemplete() {
   const noseMesh = new THREE.InstancedMesh(noseGeo, headMat, heads.length);
   headMesh.castShadow = noseMesh.castShadow = true;
   heads.forEach((h, i) => {
-    dummy.position.set(h.x, -.66 + (i % 3) * .06, h.z); dummy.rotation.set((Math.random() - .5) * .08, h.r, (Math.random() - .5) * .08); dummy.scale.set(1 + Math.random() * .12, 1, 1); dummy.updateMatrix(); headMesh.setMatrixAt(i, dummy.matrix);
+    dummy.position.set(h.x, .04 + (i % 3) * .06, h.z); dummy.rotation.set((Math.random() - .5) * .08, h.r, (Math.random() - .5) * .08); dummy.scale.set(1 + Math.random() * .12, 1, 1); dummy.updateMatrix(); headMesh.setMatrixAt(i, dummy.matrix);
     color.set('#aa9c80').offsetHSL(h.hue, 0, (Math.random() - .5) * .12); headMesh.setColorAt(i, color);
-    dummy.position.set(h.x, -.68 + (i % 3) * .06, h.z); dummy.rotation.set(0, h.r, 0); dummy.updateMatrix(); noseMesh.setMatrixAt(i, dummy.matrix); noseMesh.setColorAt(i, color);
+    dummy.position.set(h.x, .02 + (i % 3) * .06, h.z); dummy.rotation.set(0, h.r, 0); dummy.updateMatrix(); noseMesh.setMatrixAt(i, dummy.matrix); noseMesh.setColorAt(i, color);
   });
   headMesh.instanceMatrix.needsUpdate = noseMesh.instanceMatrix.needsUpdate = true;
   group.add(headMesh, noseMesh);

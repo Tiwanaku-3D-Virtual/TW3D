@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createTerrain } from './ambiente.js';
 
 export function createScene(container) {
   const scene = new THREE.Scene();
@@ -14,7 +15,7 @@ export function createScene(container) {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = .9;
   container.appendChild(renderer.domElement);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 3);
@@ -23,8 +24,8 @@ export function createScene(container) {
   controls.minDistance = 10;
   controls.maxDistance = 220;
   controls.maxPolarAngle = Math.PI * .47;
-  scene.add(new THREE.HemisphereLight('#d7e4dc', '#716655', 2.0));
-  const sun = new THREE.DirectionalLight('#fff0ce', 3.0);
+  scene.add(new THREE.HemisphereLight('#d7e4dc', '#716655', 1.15));
+  const sun = new THREE.DirectionalLight('#fff0ce', 2.0);
   sun.position.set(-35, 55, 24);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1536, 1536);
@@ -32,8 +33,7 @@ export function createScene(container) {
   sun.shadow.camera.top = 130; sun.shadow.camera.bottom = -130;
   sun.shadow.normalBias = .04;
   scene.add(sun);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), new THREE.MeshStandardMaterial({ color: '#9b9277', roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2; ground.position.y = -.18; ground.receiveShadow = true; ground.name = 'suelo'; scene.add(ground);
+  const ground = createTerrain(); scene.add(ground);
   const resize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
   addEventListener('resize', resize);
   return { scene, camera, renderer, controls, sun, ground };

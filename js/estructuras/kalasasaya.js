@@ -10,7 +10,7 @@ export function createKalasasaya() {
   walls.count=n;walls.instanceMatrix.needsUpdate=true;walls.castShadow=walls.receiveShadow=true;group.add(walls);
   const pillarGeo=new THREE.CylinderGeometry(.62,.75,3.5,10);const pillars=new THREE.InstancedMesh(pillarGeo,stone,34);let p=0;
   for(let x=-18;x<=18;x+=3.6)for(const z of [-10.5,10.5]){d.position.set(x,2.1,z);d.scale.set(1,.88+Math.random()*.22,1);d.updateMatrix();pillars.setMatrixAt(p++,d.matrix);}
-  for(const z=-8;z<=8;z+=4)for(const x of [-17.5,17.5]){d.position.set(x,2.1,z);d.updateMatrix();pillars.setMatrixAt(p++,d.matrix);}
+  for(let z=-8;z<=8;z+=4)for(const x of [-17.5,17.5]){d.position.set(x,2.1,z);d.updateMatrix();pillars.setMatrixAt(p++,d.matrix);}
   pillars.count=p;pillars.instanceMatrix.needsUpdate=true;pillars.castShadow=true;group.add(pillars);
   // Monolito Bennett, estela de gran tamaño con rostro y bandas de relieve.
   const bennett=new THREE.Group();bennett.name='monolito-bennett';bennett.userData.infoKey='bennett';bennett.position.set(0,0,-7.5);

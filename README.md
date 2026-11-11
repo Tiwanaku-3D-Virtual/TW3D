@@ -16,6 +16,7 @@ Experiencia arqueológica para GitHub Pages, construida con HTML, CSS y JavaScri
 - `js/estructuras/sitio.js`: composición del recinto y sus estructuras.
 - `js/estructuras/puerta-sol.js`, `kalasasaya.js`, `akapana.js` y `puma-punku.js`: monumentos principales.
 - `js/estructuras/auxiliares.js`: Puerta de la Luna, Putuni, Kheri Kala, Kantatallita y muros de acceso.
+- `js/ambiente.js`: terreno ondulado, cielo, lago, ichu instanciado y llamas animadas.
 - `js/mapa.js`: interacción y ciclo de luz del recorrido.
 - `map.css`: interfaz responsive del mapa.
 
@@ -24,7 +25,7 @@ Experiencia arqueológica para GitHub Pages, construida con HTML, CSS y JavaScri
 - Ratón o dedo: orbitar la vista.
 - Rueda o gesto de pellizco: acercar y alejar.
 - Toca o haz clic en una estructura: abrir su ficha.
-- Botón `☀ Día`: alternar luz de día y de noche.
+- Botón de atmósfera o tecla `N`: recorrer día, ocaso y noche.
 - `Esc`: cerrar la ficha ampliada.
 
 Abre `map.html` mediante un servidor estático o GitHub Pages. El CDN de Three.js requiere conexión a internet.
