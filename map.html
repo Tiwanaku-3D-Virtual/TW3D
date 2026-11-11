@@ -21,6 +21,7 @@
     <div class="header-actions">
       <a class="glass-button" href="index.html">Sala de museo</a>
       <button id="btn-walk" class="glass-button" aria-label="Activar exploración a pie">Explorar a pie</button>
+      <button id="btn-mute" class="glass-button" aria-label="Activar el viento ambiental">🔈 Viento</button>
       <button id="btn-time" class="glass-button" aria-label="Cambiar atmósfera; tecla N">☀ Día</button>
     </div>
   </header>
@@ -33,6 +34,19 @@
     <button id="btn-detail" class="gold-button">Ver en detalle</button>
     <p class="hint">Arrastra para girar · rueda para acercarte · toca una estructura</p>
   </aside>
+  <aside id="nearby-card" class="nearby-card" aria-live="polite" hidden>
+    <div class="eyebrow">A TU ALREDEDOR</div>
+    <h2 id="nearby-title"></h2>
+    <p id="nearby-period" class="period"></p>
+    <p id="nearby-description"></p>
+    <dl><dt>Función</dt><dd id="nearby-function"></dd><dt>Dato curioso</dt><dd id="nearby-curiosity"></dd></dl>
+    <button id="nearby-detail" class="gold-button">Ver en detalle</button>
+  </aside>
+  <section id="minimap-wrap" class="minimap-wrap" aria-label="Minimapa del sitio arqueológico">
+    <div class="minimap-title">MAPA DEL RECINTO</div>
+    <canvas id="mini-map" width="240" height="170" aria-label="Mapa: estructuras visitadas y ubicación del jugador"></canvas>
+    <div class="minimap-legend"><span>● Posición</span><span>✔ Visitado</span></div>
+  </section>
   <div class="map-footer"><span>TIWANAKU · ALTIPLANO ANDINO</span><span id="interaction-help">Órbita con ratón o gestos</span></div>
   <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
     <section class="modal-card"><button id="modal-close" class="close-button" aria-label="Cerrar">×</button><div class="eyebrow">FICHA ARQUEOLÓGICA</div><h2 id="modal-title"></h2><p id="modal-period" class="period"></p><p id="modal-description"></p><dl><dt>Función</dt><dd id="modal-function"></dd><dt>Dato curioso</dt><dd id="modal-curiosity"></dd></dl></section>
