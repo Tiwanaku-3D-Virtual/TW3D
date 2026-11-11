@@ -1,58 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiwanaku - Recorrido Escénico 3D</title>
-    <meta name="description" content="Vista escénica completa del complejo arqueológico de Tiwanaku sobre terreno realista.">
-    
-    <!-- Fuentes Google Fonts del proyecto principal: Cinzel y Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="recorrido.css">
-
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=map.html">
+  <meta name="description" content="El recorrido de Tiwanaku se actualizó; abre el nuevo mapa arqueológico 3D.">
+  <title>Tiwanaku 3D — Recorrido actualizado</title>
 </head>
 <body>
-    <!-- Pantalla de carga con diseño andino -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="loading-card">
-            <div class="chakana-spinner"></div>
-            <h2 class="loading-title">TIWANAKU ESCÉNICO</h2>
-            <p class="loading-sub">Cargando modelos, texturas y suelo arqueológico...</p>
-            <div class="progress-bar-wrap">
-                <div id="loading-bar" class="progress-bar-fill"></div>
-            </div>
-            <span id="loading-percent" class="loading-percent">0%</span>
-        </div>
-    </div>
-
-    <!-- Contenedor 3D WebGL -->
-    <div id="tour-container"></div>
-
-    <!-- Encabezado sutil flotante -->
-    <header class="tour-header">
-        <div class="tour-badge">
-            <span class="badge-icon">🏛️</span>
-            <div>
-                <h1 class="tour-title">COMPLEJO ARQUEOLÓGICO DE TIWANAKU</h1>
-                <p class="tour-hint">Arrastra con el ratón para rotar la vista • Rueda para zoom • Clic derecho para desplazar</p>
-            </div>
-        </div>
-        <a href="index.html" class="back-btn" title="Volver al visor principal">
-            ← Volver al Museo
-        </a>
-    </header>
-
-    <script type="module" src="js/recorrido.js"></script>
+  <p>El recorrido se actualizó. <a href="map.html">Abrir el mapa 3D de Tiwanaku</a>.</p>
+  <script>location.replace('map.html');</script>
 </body>
 </html>

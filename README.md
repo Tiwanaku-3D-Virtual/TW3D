@@ -1,12 +1,12 @@
 # Tiwanaku 3D — Museo Virtual Inmersivo
 
-Experiencia arqueológica para GitHub Pages, construida con HTML, CSS y JavaScript nativos. Three.js se carga desde CDN mediante `importmap`; no requiere npm ni proceso de compilación. Las nuevas estructuras se generan mediante geometrías Three.js.
+Experiencia arqueológica para GitHub Pages, construida con HTML, CSS y JavaScript nativos. Three.js se carga desde CDN mediante `importmap`; no requiere npm ni proceso de compilación. Las estructuras y piezas de las páginas activas se generan por código con geometrías Three.js.
 
 ## Páginas
 
 - `map.html`: recorrido 3D del sitio arqueológico.
 - `index.html`: sala virtual de piezas arqueológicas.
-- `recorrido.html`: vista escénica anterior, conservada como página complementaria.
+- `recorrido.html`: alias que redirige a `map.html` para conservar enlaces antiguos.
 
 ## Estructura del código
 
@@ -20,7 +20,9 @@ Experiencia arqueológica para GitHub Pages, construida con HTML, CSS y JavaScri
 - `js/jugador.js`: modo a pie, movimiento, salto y colisiones sencillas.
 - `js/ambiente-sonoro.js`: viento ambiental sintetizado con Web Audio.
 - `js/mapa.js`: interacción y ciclo de luz del recorrido.
+- `js/galeria.js`: sala 3D, modelos de las once piezas, foco de museo y selección para examinarlas.
 - `map.css`: interfaz responsive del mapa.
+- `galeria.css`: interfaz responsive de la sala de piezas.
 
 ## Controles
 
@@ -32,5 +34,7 @@ Experiencia arqueológica para GitHub Pages, construida con HTML, CSS y JavaScri
 - Minimapa: posición actual y estructuras visitadas con una marca.
 - Botón `Viento`: activar o silenciar el sonido ambiental generado en el navegador.
 - `Esc`: cerrar la ficha ampliada.
+- Sala de piezas: selecciona cualquiera de las once tarjetas inferiores o toca/clic en un modelo; arrastra para orbitar y usa la rueda o el pellizco para acercar.
+- `Ver en el sitio`: abrir el recorrido arqueológico desde la ficha de una pieza.
 
 Abre `map.html` mediante un servidor estático o GitHub Pages. El CDN de Three.js requiere conexión a internet.
