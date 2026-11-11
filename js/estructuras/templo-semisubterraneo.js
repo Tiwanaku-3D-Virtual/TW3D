@@ -86,7 +86,7 @@ export function createTemplete() {
   // Monolito antropomorfo central y dos estelas menores laterales.
   const andesite = new THREE.MeshStandardMaterial({ color:'#756d5c', roughness:.93 });
   const relief = new THREE.MeshStandardMaterial({ color:'#918571', roughness:.9 });
-  const ponce = new THREE.Group(); ponce.name='monolito-ponce'; ponce.position.y=-4.75;
+  const ponce = new THREE.Group(); ponce.name='monolito-ponce'; ponce.position.y=-4.75; ponce.userData.infoKey='monolito';
   const pieces = [
     [new THREE.BoxGeometry(1.8,.35,1.3),0,.2,0], [new THREE.CylinderGeometry(.72,.85,.5,8),0,.62,0],
     [new THREE.BoxGeometry(1.2,2.25,.8),0,1.95,0], [new THREE.BoxGeometry(1.35,1,.95),0,3.5,0],

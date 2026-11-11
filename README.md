@@ -13,6 +13,9 @@ Experiencia arqueológica para GitHub Pages, construida con HTML, CSS y JavaScri
 - `js/escena.js`: cámara, renderizador, controles y luz base del mapa.
 - `js/info.js`: fichas arqueológicas del sitio.
 - `js/estructuras/templo-semisubterraneo.js`: patio hundido, muros, cabezas clavas, escalinatas y monolitos.
+- `js/estructuras/sitio.js`: composición del recinto y sus estructuras.
+- `js/estructuras/puerta-sol.js`, `kalasasaya.js`, `akapana.js` y `puma-punku.js`: monumentos principales.
+- `js/estructuras/auxiliares.js`: Puerta de la Luna, Putuni, Kheri Kala, Kantatallita y muros de acceso.
 - `js/mapa.js`: interacción y ciclo de luz del recorrido.
 - `map.css`: interfaz responsive del mapa.
 
