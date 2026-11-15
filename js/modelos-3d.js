@@ -1,10 +1,24 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 // Activa la caché interna de archivos de Three.js para acelerar recargas y reutilizar datos
 THREE.Cache.enabled = true;
 
+// Decodificador Draco asíncrono optimizado con Web Workers para modelos comprimidos
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+dracoLoader.setDecoderConfig({ type: 'js' });
+
+export function configureDRACO(targetLoader) {
+  if (targetLoader && typeof targetLoader.setDRACOLoader === 'function') {
+    targetLoader.setDRACOLoader(dracoLoader);
+  }
+  return targetLoader;
+}
+
 const loader = new GLTFLoader();
+configureDRACO(loader);
 const textureLoader = new THREE.TextureLoader();
 
 const textureCache = new Map();

@@ -90,10 +90,13 @@
 }
 .loading-bar {
   height: 100%;
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
   background: linear-gradient(90deg, #d4af37, #f6e05e, #ffd700);
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: transform 0.25s ease;
+  will-change: transform;
   box-shadow: 0 0 14px rgba(246, 224, 94, 0.7);
 }
 .loading-status {

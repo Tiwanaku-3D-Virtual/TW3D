@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { configureDRACO } from './modelos-3d.js';
 import { terrainHeight } from './ambiente.js';
 import { kalasasayaPillarPositions } from './estructuras/kalasasaya.js';
 
@@ -92,7 +93,7 @@ export function createJugador(camera, renderer, orbitControls, button, site = nu
   let characterModel = null;
   let characterLoadingStarted = false;
 
-  const gltfLoader = new GLTFLoader();
+  const gltfLoader = configureDRACO(new GLTFLoader());
 
   function loadCharacter() {
     if (characterLoadingStarted) return;

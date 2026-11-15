@@ -1,6 +1,6 @@
 export function createNarratorAudio(options = {}) {
   const audio = new Audio('assets/audio/voice_preview_narradora%20de%20god%20of%20war.mp3');
-  audio.preload = 'auto';
+  audio.preload = 'none';
 
   const buttons = options.buttons || [];
   const progressBar = options.progressBar || null;
@@ -72,7 +72,7 @@ export function createNarratorAudio(options = {}) {
 
 export function createProximityAudio(sources, isNarratorPlaying = () => false) {
   const audio = new Audio();
-  audio.preload = 'auto';
+  audio.preload = 'none';
   let currentKey = null;
   let pendingKey = null;
   let unlocked = false;

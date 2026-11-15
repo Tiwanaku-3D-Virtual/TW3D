@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { configureDRACO } from './modelos-3d.js';
 
 // Topografía del altiplano: ondulación suave hacia los cerros exteriores
 export function terrainHeight(x, z) {
@@ -122,7 +123,7 @@ export function createTerrain() {
     );
   };
 
-  const loader = new GLTFLoader();
+  const loader = configureDRACO(new GLTFLoader());
   loader.load(
     'assets/models/suelo.glb',
     (gltf) => {
@@ -316,7 +317,7 @@ function isExcludedZone(x, z) {
  * normalizada y apoyada con Raycaster sobre el relieve del terreno.
  */
 async function createInstancedIchu(scene) {
-  const loader = new GLTFLoader();
+  const loader = configureDRACO(new GLTFLoader());
   const dummy = new THREE.Object3D();
 
   let seed = 48291;
@@ -438,7 +439,7 @@ async function createInstancedIchu(scene) {
  * normalizadas con base en el suelo y distribuidas con Raycaster para evitar que floten.
  */
 async function createInstancedRocks(scene) {
-  const loader = new GLTFLoader();
+  const loader = configureDRACO(new GLTFLoader());
   const dummy = new THREE.Object3D();
 
   let seed = 73918;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { configureDRACO } from './modelos-3d.js';
 
 /**
  * Sistema de Antorchas Ceremoniales (Pebetero.glb)
@@ -41,7 +42,7 @@ export async function createTorchSystem(scene, camera = null) {
   group.name = 'sistema-antorchas-ceremoniales';
   scene.add(group);
 
-  const loader = new GLTFLoader();
+  const loader = configureDRACO(new GLTFLoader());
   let pebeteroBase = null;
 
   // Material de piedra andesita oscura rugosa (0x4a3b2c, roughness: 0.9, metalness: 0.05)

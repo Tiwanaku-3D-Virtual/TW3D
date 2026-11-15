@@ -1,0 +1,74 @@
+# Museo Virtual 3D de Tiwanaku
+
+> Museo virtual interactivo en 3D para la preservación, divulgación e investigación arqueológica del complejo ceremonial prehispánico de la Cultura Tiahuanaco (Tiwanaku), ubicado en el altiplano de Bolivia a 3.850 m s.n.m. Construido con Three.js, WebGL y tecnologías web modernas.
+
+## Descripción del Proyecto
+
+El Museo Virtual 3D de Tiwanaku es una plataforma web inmersiva de código abierto diseñada para ofrecer recorridos patrimoniales en tiempo real por el sitio arqueológico de Tiwanaku y salas de exhibición de piezas líticas y monumentales. La aplicación permite a estudiantes, investigadores y público general explorar con fidelidad arqueológica las edificaciones y esculturas más emblemáticas de la cultura tiwanacota desarrollada entre los años 1500 a. C. y 1200 d. C.
+
+## Rutas y Experiencias Principales
+
+- [Recorrido Panorámico del Sitio](file:///map.html): Vista interactiva de sobrevuelo y modo caminata en primera persona por el complejo arqueológico al aire libre. Incluye puntos de historia, audio guías narradas y selector de atmósferas.
+- [Sala de Exhibición de Monumentos](file:///exhibicion.html): Galería interactiva 3D con pedestal giratorio, iluminación de museo, fichas técnicas arqueológicas, fotografías de referencia e inspección detallada de esculturas individuales.
+- [Experiencia Principal](file:///index.html): Portal de bienvenida y punto de entrada al museo virtual interactivo.
+
+## Monumentos y Esculturas Modeladas en 3D
+
+1. **Puerta del Sol (Sun Gate)**:
+   - Monumento monolítico tallado en andesita de una sola pieza, representativo del calendario y cosmología tiwanacota.
+   - En el dintel superior destaca la figura central del "Señor de los Cetros" (Dios Wiracocha / Divinidad de los Báculos), rodeado de 48 figuras aladas de hombres y cóndores en bajorrelieve.
+   - Peso estimado: ~10 toneladas; dimensiones aproximadas: 3 m de alto por 4 m de ancho.
+
+2. **Templo de Kalasasaya**:
+   - Plataforma ceremonial amurallada de 130 x 120 metros con pilares megalíticos de arenisca y andesita.
+   - Centro astronómico utilizado para marcar los solsticios y equinoccios mediante el alineamiento de la luz solar en las estaciones del año.
+   - Alberga en su interior el Monolito Ponce y la Puerta del Sol.
+
+3. **Templete Semisubterráneo**:
+   - Estructura ceremonial hundida de planta rectangular (26 x 28 m), delimitada por muros de piedra con más de 100 cabezas clavas empotradas.
+   - Las cabezas clavas representan diferentes etnias, rasgos humanos y deidades felinas y ofidias.
+   - Albergó históricamente al monumental Monolito Bennett y estelas líticas de periodos tempranos.
+
+4. **Pumapunku (Puerta del Puma)**:
+   - Complejo ceremonial famoso por su extraordinaria precisión lítica, cortes angulares milimétricos en bloques H y grapas metálicas de unión (cobre-arsénico-níquel).
+   - Testimonio de la ingeniería arquitectónica y ensamblaje modular más sofisticado de América precolombina.
+
+5. **Monolito Ponce**:
+   - Estela antropomorfa tallada en andesita gris que representa a un gobernante o sacerdote portando keros (vasos ceremoniales) y un sonajero o tableta de inhalación.
+   - Decorado con minuciosas iconografías de cóndores, peces, pumas y motivos geométricos.
+
+6. **Monolito Bennett (Estela 10)**:
+   - La escultura lítica más grande hallada en Tiwanaku, con una altura de 7,30 metros y un peso aproximado de 20 toneladas tallada en arenisca roja.
+
+7. **Pirámide de Akapana**:
+   - Estructura piramidal escalonada de 7 niveles con orientación cardinal, templo superior y un sofisticado sistema hidráulico de canales de drenaje que evocaba montañas sagradas (Apus).
+
+8. **Chachapuma**:
+   - Escultura lítica zoomorfa y antropomorfa que personifica al sacrificador ritual con máscara o cabeza de felino (puma), portando un hacha ceremonial y una cabeza trofeo.
+
+9. **Kheri Kala**:
+   - Conjunto residencial y ceremonial con patios interiores y muros de doble paramento, asociado a la élite sacerdotal y administrativa de Tiwanaku.
+
+10. **Puerta de la Luna**:
+    - Monumento lítico menor similar a la Puerta del Sol, ubicado en las inmediaciones del cementerio y la pirámide de Putuni, decorado con frisos de motivos meándricos y zoomorfos.
+
+## Características Técnicas de Navegación e Interacción
+
+- **Iluminación Dinámica y Atmósferas**:
+  - *Día*: Iluminación solar cenital natural con sombras suaves y niebla ambiental ligera del altiplano.
+  - *Atardecer / Ocaso*: Tonalidades doradas y cálidas con sombras alargadas y cielo rojizo.
+  - *Noche*: Atmósfera nocturna bajo el cielo estrellado andino, iluminada por antorchas con pebeteros de fuego volumétrico.
+- **Modos de Cámara**:
+  - *Modo Órbita / Panorámico*: Control orbital fluido con mouse o gestos táctiles (zoom con rueda/pellizco, rotación y paneo).
+  - *Modo Caminata (Recorrido Libre)*: Exploración en primera persona usando teclado (W, A, S, D / flechas) o clics en el terreno con control de colisiones y altura del suelo calculada analíticamente.
+- **Audio Guía Patrimonial**:
+  - Locución histórica y contextual de cada monumento en español, con música ambiental andina y efectos de viento altiplánico bajo demanda (`preload="none"`).
+- **Inspección en Detalle**:
+  - Selección de modelos en 3D para apertura de fichas técnicas, ampliación fotográfica (lightbox) y visualización en el visor de exhibición.
+
+## Arquitectura de Software y Optimización WebGL
+
+- **Motor 3D**: Three.js r128+ con `DRACOLoader` (CDN Google/Three.js v1.5.6) para descompresión geométrica en GPU.
+- **Renderizado Responsivo**: Limitación inteligente de pixel ratio (`Math.min(devicePixelRatio, 1.5)`), sombras PCF y optimización de draw calls mediante `InstancedMesh` para vegetación (ichu) y rocas.
+- **Carga Asíncrona Progresiva**: Pipeline no bloqueante con `yieldThread` (cediendo el hilo principal tras la carga de cada activo) y `renderer.compileAsync` para garantizar First Contentful Paint (FCP) ultrarrápido y cero Long Tasks (>50 ms).
+- **Accesibilidad y SEO**: Cumplimiento WCAG 2.1 AA con objetivos táctiles de 44x44px mínimos, navegación semántica (`<main>`, `<nav>`, `<aside>`), metadatos Open Graph, Twitter Cards y datos estructurados JSON-LD Schema.org (`TouristAttraction`, `Museum`, `WebSite`).

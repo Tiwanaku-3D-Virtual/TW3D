@@ -34,7 +34,9 @@ const loadingStatus = document.querySelector('#loading-status');
 
 function setLoadProgress(percent, text) {
   const p = Math.min(Math.max(percent, 0), 100);
-  if (loadingBar) loadingBar.style.width = `${p}%`;
+  if (loadingBar) {
+    loadingBar.style.transform = `scaleX(${p / 100})`;
+  }
   if (loadingStatus && text) loadingStatus.textContent = text;
 }
 
@@ -93,19 +95,35 @@ const site = createSitio();
 scene.add(site);
 
 // Carga asíncrona y progresiva por fases con cesión del hilo principal
-addExistingSiteModels(site, () => {
-  requestRender();
-}).then(() => {
-  finishLoading();
-  setModelOutline(selected);
-}).catch((err) => {
-  console.warn('Carga progresiva completada con avisos:', err);
-  finishLoading();
-  setModelOutline(selected);
-});
+// Se difiere el arranque para garantizar que el DOM inicial y pantalla de carga pinten primero (FCP < 100ms)
+function startProgressiveLoading() {
+  addExistingSiteModels(site, () => {
+    requestRender();
+  }).then(async () => {
+    if (renderer && typeof renderer.compileAsync === 'function') {
+      try {
+        await renderer.compileAsync(scene, camera);
+      } catch (e) {
+        console.warn('compileAsync omitido:', e);
+      }
+    }
+    finishLoading();
+    setModelOutline(selected);
+  }).catch((err) => {
+    console.warn('Carga progresiva completada con avisos:', err);
+    finishLoading();
+    setModelOutline(selected);
+  });
+}
 
 // Respaldo de seguridad prolongado (25s) para conexiones móviles lentas
 setTimeout(finishLoading, 25000);
+
+// Difiere el inicio de descargas y procesamiento hasta después del primer pintado del DOM (FCP < 100ms)
+requestAnimationFrame(() => {
+  requestRender();
+  setTimeout(startProgressiveLoading, 60);
+});
 
 const environment = createAmbiente(scene, sun, requestRender);
 const clock = new THREE.Clock();
@@ -309,7 +327,9 @@ function updateInfoCard(key, point = null) {
   if (mediaContainer && mediaImg) {
     if (data.imagen) {
       mediaImg.src = data.imagen;
-      mediaImg.alt = data.nombre;
+      mediaImg.alt = `Fotografía arqueológica de ${data.nombre}`;
+      mediaImg.loading = 'lazy';
+      mediaImg.decoding = 'async';
       mediaContainer.hidden = false;
     } else {
       mediaContainer.hidden = true;
@@ -492,7 +512,9 @@ function openDetail() {
   if (modalMedia && modalImg) {
     if (data.imagen) {
       modalImg.src = data.imagen;
-      modalImg.alt = data.nombre;
+      modalImg.alt = `Detalle ampliado de ${data.nombre}`;
+      modalImg.loading = 'lazy';
+      modalImg.decoding = 'async';
       modalMedia.hidden = false;
     } else {
       modalMedia.hidden = true;
@@ -598,7 +620,7 @@ let currentVolumeVal = 0.85;
 
 const ambientWind = new Audio('assets/audio/sonido_de_viento_ambiente.mp3');
 ambientWind.loop = true;
-ambientWind.preload = 'auto';
+ambientWind.preload = 'none';
 
 let windStarted = false;
 function tryStartAmbientWind() {

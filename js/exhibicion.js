@@ -419,7 +419,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: 'high-performance'
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1190,6 +1190,7 @@ async function selectMonument(index) {
 // SISTEMA DE AUDIO GUÍA [TECLA E]
 // ==========================================================================
 const audioPlayer = new Audio();
+audioPlayer.preload = 'none';
 const audioBtn = document.querySelector('#btn-audio-guide');
 const audioProgressBar = document.querySelector('#audio-progress-bar');
 
@@ -1286,7 +1287,7 @@ if (muteBtn) {
 // Sonido de ambiente de viento andino en exhibición 3D
 const exhibicionWind = new Audio('assets/audio/sonido_de_viento_ambiente.mp3');
 exhibicionWind.loop = true;
-exhibicionWind.preload = 'auto';
+exhibicionWind.preload = 'none';
 
 let exhibicionWindStarted = false;
 function updateExhibicionWindVolume() {
@@ -1347,6 +1348,8 @@ function updateSidePanel(config) {
     if (config.imagen) {
       panelImage.src = config.imagen;
       panelImage.alt = `Fotografía arqueológica de ${config.nombre}`;
+      panelImage.loading = 'lazy';
+      panelImage.decoding = 'async';
       panelImageWrap.style.display = 'block';
     } else {
       panelImageWrap.style.display = 'none';
@@ -1359,7 +1362,9 @@ if (panelImageWrap) {
     const config = MONUMENTOS[activeMonumentIndex];
     if (!config?.imagen || !lightboxModal || !lightboxImg) return;
     lightboxImg.src = config.imagen;
-    lightboxImg.alt = config.nombre;
+    lightboxImg.alt = `Fotografía arqueológica en alta resolución de ${config.nombre}`;
+    lightboxImg.loading = 'lazy';
+    lightboxImg.decoding = 'async';
     if (lightboxCaption) lightboxCaption.textContent = `${config.nombre} · Fotografía Arqueológica`;
     lightboxModal.classList.add('open');
   });

@@ -112,6 +112,8 @@ body::after {
   color: var(--text-light) !important;
   border-radius: 999px !important;
   padding: 7px 15px !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: 0.02em !important;
@@ -121,7 +123,7 @@ body::after {
   gap: 6px !important;
   cursor: pointer !important;
   font-family: Outfit, system-ui, sans-serif !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease !important;
   white-space: nowrap !important;
 }
 
@@ -171,7 +173,8 @@ body::after {
 .glass-pill-btn.icon-only {
   padding: 7px 12px !important;
   font-size: 16px !important;
-  min-width: 38px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
   justify-content: center !important;
 }
 
@@ -226,8 +229,14 @@ body::after {
   line-height: 1 !important;
   padding: 0 !important;
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.45) !important;
-  transition: all 0.25s ease !important;
+  transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease, border-color 0.25s ease, width 0.25s ease !important;
   z-index: 10 !important;
+}
+
+.panel-collapse-btn::before {
+  content: '';
+  position: absolute;
+  inset: -6px -12px -6px -6px;
 }
 
 .panel-collapse-btn:hover {
@@ -317,7 +326,7 @@ body::after {
   border: none !important;
   cursor: pointer !important;
   box-shadow: 0 6px 20px rgba(212, 167, 55, 0.35) !important;
-  transition: all 0.25s ease !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
   margin-top: 10px !important;
 }
 
@@ -423,7 +432,7 @@ body::after {
   padding: 8px 16px !important;
   font-weight: 500;
   letter-spacing: 0.02em;
-  transition: all 0.25s ease !important;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
 }
 
 .header-actions .glass-button:hover,
@@ -455,7 +464,7 @@ body::after {
   font-weight: 700 !important;
   border: none !important;
   box-shadow: 0 6px 22px rgba(216, 178, 76, 0.35) !important;
-  transition: all 0.3s ease !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
 }
 
 .gold-button:hover,
@@ -544,7 +553,7 @@ body::after {
   color: var(--text-light) !important;
   font-weight: 500 !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease !important;
   user-select: none !important;
 }
 
@@ -684,7 +693,12 @@ body::after {
   color: #a4b49e;
   font-size: 1.1rem;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 4px;
   transition: color 0.18s, background 0.18s;
 }
@@ -707,13 +721,14 @@ body::after {
   font-size: 0.82rem;
   font-weight: 500;
   padding: 7px 10px;
+  min-height: 44px;
   border-radius: 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .audio-ctrl-btn:hover {
@@ -879,6 +894,7 @@ body::after {
 .model-options button {
   width: 100% !important;
   padding: 8px 12px !important;
+  min-height: 44px !important;
   border: 1px solid transparent !important;
   border-radius: 8px !important;
   background: transparent !important;
@@ -887,7 +903,7 @@ body::after {
   font-size: 12.5px !important;
   font-family: Outfit, sans-serif !important;
   cursor: pointer !important;
-  transition: all 0.18s ease !important;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease !important;
 }
 
 .model-options button:hover,
@@ -926,8 +942,10 @@ body::after {
   position: absolute !important;
   top: 12px !important;
   right: 12px !important;
-  width: 32px !important;
-  height: 32px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -939,9 +957,21 @@ body::after {
   line-height: 1 !important;
   cursor: pointer !important;
   pointer-events: auto !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
   z-index: 10 !important;
   outline: none !important;
+}
+
+.guide-close::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .guide-close:hover {

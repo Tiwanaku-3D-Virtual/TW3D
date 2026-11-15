@@ -10,6 +10,30 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="map.css">
+  <link rel="canonical" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/#website",
+        "url": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/",
+        "name": "Tiwanaku 3D — Museo Virtual y Recorrido Arqueológico",
+        "description": "Recorrido arqueológico virtual interactivo en 3D por el sitio monumental de Tiwanaku en el Altiplano Boliviano.",
+        "inLanguage": "es"
+      },
+      {
+        "@type": "TouristAttraction",
+        "@id": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/#attraction",
+        "name": "Sitio Arqueológico de Tiwanaku",
+        "description": "Complejo arqueológico prehispánico de la cultura tiahuanacota, incluyendo la Puerta del Sol, Kalasasaya, Templete Semisubterráneo y Pumapunku.",
+        "url": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/",
+        "touristType": "CulturalTourism"
+      }
+    ]
+  }
+  </script>
   <script type="importmap">
   {
     "imports": {
@@ -36,7 +60,7 @@
     </div>
   </div>
 
-  <div id="map-canvas" aria-label="Sitio arqueológico de Tiwanaku en tres dimensiones"></div>
+  <main id="map-canvas" aria-label="Sitio arqueológico de Tiwanaku en tres dimensiones"></main>
   <div id="story-points" class="story-points" aria-label="Puntos de historia del modelo seleccionado"></div>
 
   <!-- Contenedor UI principal superpuesto flotante -->
@@ -90,7 +114,7 @@
 
       <div class="eyebrow">RECORRIDO ARQUEOLÓGICO</div>
       <div id="info-media-container" class="info-card-media">
-        <img id="info-image" class="info-image" src="assets/images/templete_semisubterráneo.jpeg" alt="Fotografía arqueológica del Templete Semisubterráneo de Tiwanaku" width="304" height="171" loading="lazy" />
+        <img id="info-image" class="info-image" src="assets/images/templete_semisubterráneo.jpeg" alt="Fotografía arqueológica del Templete Semisubterráneo de Tiwanaku" width="304" height="171" loading="lazy" decoding="async" />
       </div>
       <h1 id="info-title">Templete Semisubterráneo</h1>
       <p id="info-period" class="period">500–900 d.C.</p>
@@ -132,7 +156,7 @@
     <div class="right-panel-stack">
       <!-- Panel Superior: Mapa y Navegación -->
       <section id="minimap-wrap" class="minimap-wrap" aria-label="Minimapa del sitio arqueológico">
-        <div class="minimap-title">MAPA DEL RECINTO</div>
+        <h2 class="minimap-title">MAPA DEL RECINTO</h2>
         <canvas id="mini-map" width="240" height="170" aria-label="Mapa: estructuras visitadas y ubicación del jugador"></canvas>
         <div class="minimap-legend"><span>● Posición</span><span>✔ Visitado</span></div>
         <div id="minimap-hotspots" class="minimap-hotspots" aria-label="Acceso rápido a monumentos"></div>
@@ -143,7 +167,7 @@
         <div class="audio-panel-header">
           <span class="music-note-icon">🎵</span>
           <div>
-            <div id="audio-panel-title" class="audio-panel-title">MÚSICA Y AMBIENTE SONORO</div>
+            <h2 id="audio-panel-title" class="audio-panel-title">MÚSICA Y AMBIENTE SONORO</h2>
             <div class="audio-panel-subtitle">Ambiente sonoro y narración del recorrido</div>
           </div>
           <button type="button" id="btn-close-audio-panel" class="close-audio-panel" aria-label="Cerrar panel de música">✕</button>
@@ -175,7 +199,7 @@
       <button id="modal-close" class="close-button" aria-label="Cerrar ficha arqueológica">×</button>
       <div class="eyebrow">FICHA ARQUEOLÓGICA</div>
       <div id="modal-media-container" class="modal-card-media" hidden>
-        <img id="modal-image" class="modal-image" alt="Detalle ampliado de la pieza arqueológica" width="460" height="260" loading="lazy" />
+        <img id="modal-image" class="modal-image" alt="Detalle ampliado de la pieza arqueológica" width="460" height="260" loading="lazy" decoding="async" />
       </div>
       <h2 id="modal-title"></h2>
       <p id="modal-period" class="period"></p>
