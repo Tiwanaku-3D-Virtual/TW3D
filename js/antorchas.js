@@ -107,37 +107,8 @@ export async function createTorchSystem(scene, camera = null) {
   let currentAtmosphere = 'sunset';
 
   // Raycaster vertical para asentar cada pebetero sobre el suelo o plataforma
-  const raycaster = new THREE.Raycaster();
-  const rayDown = new THREE.Vector3(0, -1, 0);
-
   function snapPebetero(pebetero, loc) {
-    const x = loc.pos[0];
-    const z = loc.pos[2];
-    const initialY = loc.groundY ?? loc.pos[1];
-
-    raycaster.set(new THREE.Vector3(x, 60, z), rayDown);
-    raycaster.far = 120;
-
-    const targets = [];
-    scene.traverse((obj) => {
-      if (
-        obj.isMesh &&
-        (obj.name.includes('suelo') ||
-         obj.name.includes('terreno') ||
-         obj.name.includes('plataforma') ||
-         obj.name.includes('base') ||
-         obj.name === 'malla-suelo-topografia')
-      ) {
-        targets.push(obj);
-      }
-    });
-
-    const hits = raycaster.intersectObjects(targets, false);
-    if (hits.length > 0 && Math.abs(hits[0].point.y - initialY) < 1.8) {
-      pebetero.position.y = hits[0].point.y;
-    } else {
-      pebetero.position.y = initialY;
-    }
+    pebetero.position.y = loc.groundY ?? loc.pos[1] ?? 0;
   }
 
   torchLocations.forEach((loc, index) => {

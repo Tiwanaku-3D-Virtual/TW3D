@@ -246,7 +246,7 @@ async function addSpawnedClavas(wall) {
     base.traverse((child) => {
       if (child.isMesh) {
         child.material.side = THREE.DoubleSide;
-        child.castShadow = true;
+        child.castShadow = false; // Optimización de sombras: cabezas empotradas solo reciben sombra
         child.receiveShadow = true;
       }
     });
@@ -326,10 +326,59 @@ async function replacePumaPunku(site) {
   }
 }
 
-export async function addExistingSiteModels(site) {
-  await Promise.all([
-    ...siteAssets.map((asset) => addAsset(site, asset)),
-    replacePillars(site),
-    replacePumaPunku(site)
-  ]);
+const yieldThread = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+export async function addExistingSiteModels(site, onStep = () => {}) {
+  // Lote 1: Templete Semisubterráneo y Puerta del Sol (prioritarios)
+  const initialBatch = siteAssets.filter((a) => a.infoKey === 'templo' || a.infoKey === 'puertaSol');
+  for (const asset of initialBatch) {
+    try {
+      await addAsset(site, asset);
+    } catch (e) {
+      console.warn(`Aviso en carga de ${asset.path}:`, e);
+    }
+    onStep(asset.infoKey);
+    await yieldThread();
+  }
+
+  // Lote 2: Monumentos ceremoniales centrales (Monolito Ponce, Monolito Bennett, Chachapuma)
+  const centralBatch = siteAssets.filter((a) => ['monolito', 'bennett', 'chachapuma'].includes(a.infoKey));
+  for (const asset of centralBatch) {
+    try {
+      await addAsset(site, asset);
+    } catch (e) {
+      console.warn(`Aviso en carga de ${asset.path}:`, e);
+    }
+    onStep(asset.infoKey);
+    await yieldThread();
+  }
+
+  // Lote 3: Estructuras mayores (Muros, Puerta de la Luna, Pirámide Akapana)
+  const outerBatch = siteAssets.filter((a) => !initialBatch.includes(a) && !centralBatch.includes(a));
+  for (const asset of outerBatch) {
+    try {
+      await addAsset(site, asset);
+    } catch (e) {
+      console.warn(`Aviso en carga de ${asset.path}:`, e);
+    }
+    onStep(asset.infoKey);
+    await yieldThread();
+  }
+
+  // Lote 4: Pilares y ruinas de Puma Punku
+  try {
+    await replacePillars(site);
+  } catch (e) {
+    console.warn('Aviso en carga de pilares:', e);
+  }
+  onStep('pilares');
+  await yieldThread();
+
+  try {
+    await replacePumaPunku(site);
+  } catch (e) {
+    console.warn('Aviso en carga de Puma Punku:', e);
+  }
+  onStep('pumaPunku');
+  await yieldThread();
 }

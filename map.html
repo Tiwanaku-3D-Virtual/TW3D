@@ -4,26 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#171a16">
-  <meta name="description" content="Recorre y observa los modelos arqueológicos de Tiwanaku en su paisaje del Altiplano.">
-  <title>Tiwanaku 3D — Sitio arqueológico</title>
+  <meta name="description" content="Recorrido arqueológico virtual 3D por la ciudad ceremonial de Tiwanaku en el Altiplano Boliviano. Explora la Puerta del Sol, Kalasasaya, Pumapunku y monolitos prehispánicos.">
+  <title>Tiwanaku 3D — Sitio arqueológico y Recorrido Virtual</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="map.css">
-  <link rel="preload" href="assets/textures/cielos.webp" as="image" crossorigin>
-  <link rel="prefetch" href="assets/textures/GroundDirtRocky020_COL_2K.jpg" as="image">
-  <link rel="prefetch" href="assets/models/SunGate.glb" as="fetch" crossorigin>
-  <link rel="prefetch" href="assets/models/pared.glb" as="fetch" crossorigin>
-  <link rel="prefetch" href="assets/models/cabeza_clava.glb" as="fetch" crossorigin>
-  <link rel="prefetch" href="assets/textures/SunGate_albedo.png" as="image">
-  <link rel="prefetch" href="assets/textures/SunGate_normal.png" as="image">
-  <link rel="preload" href="assets/audio/voice_preview_narradora%20de%20god%20of%20war.mp3" as="fetch" crossorigin>
   <script type="importmap">
   {
     "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
       "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-    }
+    } 
   }
   </script>
 
@@ -86,7 +78,7 @@
       <!-- Iconos / Acciones Derecha -->
       <div class="header-actions-right">
         <button type="button" id="btn-audio-settings" class="glass-pill-btn" aria-label="Ajustes de música, volumen e iluminación">🎵 Música &amp; Ajustes</button>
-        <button type="button" id="btn-toggle-info" class="glass-pill-btn" aria-controls="info-card" aria-expanded="true">Ocultar info</button>
+        <button type="button" id="btn-toggle-info" class="glass-pill-btn" aria-label="Mostrar u ocultar panel de información" aria-controls="info-card" aria-expanded="true">Ocultar info</button>
         <button type="button" id="btn-fullscreen" class="glass-pill-btn icon-only" aria-label="Activar pantalla completa" aria-pressed="false" title="Pantalla completa">⛶</button>
       </div>
     </header>
@@ -98,7 +90,7 @@
 
       <div class="eyebrow">RECORRIDO ARQUEOLÓGICO</div>
       <div id="info-media-container" class="info-card-media">
-        <img id="info-image" class="info-image" src="assets/images/templete_semisubterráneo.jpeg" alt="Templete Semisubterráneo" loading="lazy" />
+        <img id="info-image" class="info-image" src="assets/images/templete_semisubterráneo.jpeg" alt="Fotografía arqueológica del Templete Semisubterráneo de Tiwanaku" width="304" height="171" loading="lazy" />
       </div>
       <h1 id="info-title">Templete Semisubterráneo</h1>
       <p id="info-period" class="period">500–900 d.C.</p>
@@ -109,7 +101,7 @@
         <dt>Dato curioso</dt>
         <dd id="info-curiosity">Las cabezas empotradas representan rostros de rasgos diversos; algunas llevan tocados o elementos que sugieren identidades distintas.</dd>
       </dl>
-      <button type="button" id="btn-detail" class="gold-button">Ver en detalle</button>
+      <button type="button" id="btn-detail" class="gold-button" aria-label="Ver ficha detallada del monumento seleccionado">Ver en detalle</button>
       <p class="hint">Arrastra para girar · rueda para acercarte · toca una estructura</p>
     </aside>
 
@@ -157,9 +149,9 @@
           <button type="button" id="btn-close-audio-panel" class="close-audio-panel" aria-label="Cerrar panel de música">✕</button>
         </div>
         <div class="audio-playback-actions">
-          <button type="button" id="btn-audio-play" class="audio-ctrl-btn">▶ Reproducir</button>
-          <button type="button" id="btn-audio-pause" class="audio-ctrl-btn">⏸ Pausar</button>
-          <button type="button" id="btn-audio-mute" class="audio-ctrl-btn" aria-label="Silenciar">🔊</button>
+          <button type="button" id="btn-audio-play" class="audio-ctrl-btn" aria-label="Reproducir música ambiente">▶ Reproducir</button>
+          <button type="button" id="btn-audio-pause" class="audio-ctrl-btn" aria-label="Pausar música ambiente">⏸ Pausar</button>
+          <button type="button" id="btn-audio-mute" class="audio-ctrl-btn" aria-label="Silenciar música ambiente">🔊</button>
         </div>
         <div class="audio-slider-row">
           <span class="slider-label">VOL.</span>
@@ -180,10 +172,10 @@
   </div>
   <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
     <section class="modal-card">
-      <button id="modal-close" class="close-button" aria-label="Cerrar">×</button>
+      <button id="modal-close" class="close-button" aria-label="Cerrar ficha arqueológica">×</button>
       <div class="eyebrow">FICHA ARQUEOLÓGICA</div>
       <div id="modal-media-container" class="modal-card-media" hidden>
-        <img id="modal-image" class="modal-image" alt="" loading="lazy" />
+        <img id="modal-image" class="modal-image" alt="Detalle ampliado de la pieza arqueológica" width="460" height="260" loading="lazy" />
       </div>
       <h2 id="modal-title"></h2>
       <p id="modal-period" class="period"></p>

@@ -38,7 +38,10 @@ function setLoadProgress(percent, text) {
   if (loadingStatus && text) loadingStatus.textContent = text;
 }
 
+let loadingFinished = false;
 function finishLoading() {
+  if (loadingFinished) return;
+  loadingFinished = true;
   setLoadProgress(100, '¡Sitio arqueológico listo!');
   setTimeout(() => {
     if (loadingScreen) {
@@ -70,12 +73,14 @@ const cinematic = new CinematicUpgrade({
   outlinePass
 });
 
-// Inicialización asíncrona del sistema de antorchas ceremoniales (Pebetero.glb) con antorcha de cámara
-createTorchSystem(scene, camera).then((torches) => {
-  cinematic.torchSystem = torches;
-  torches.setAtmosphere(cinematic.currentMode);
-  requestRender();
-});
+// Inicialización asíncrona del sistema de antorchas ceremoniales tras el primer render
+setTimeout(() => {
+  createTorchSystem(scene, camera).then((torches) => {
+    cinematic.torchSystem = torches;
+    torches.setAtmosphere(cinematic.currentMode);
+    requestRender();
+  }).catch((e) => console.warn('Aviso en antorchas:', e));
+}, 120);
 
 controls.addEventListener('change', requestRender);
 controls.addEventListener('start', requestRender);
@@ -87,18 +92,20 @@ document.addEventListener('visibilitychange', () => {
 const site = createSitio();
 scene.add(site);
 
-// Carga asíncrona de los modelos 3D y finalización de la pantalla de carga
-addExistingSiteModels(site).then(() => {
+// Carga asíncrona y progresiva por fases con cesión del hilo principal
+addExistingSiteModels(site, () => {
+  requestRender();
+}).then(() => {
   finishLoading();
   setModelOutline(selected);
 }).catch((err) => {
-  console.warn('Carga parcial de modelos:', err);
+  console.warn('Carga progresiva completada con avisos:', err);
   finishLoading();
   setModelOutline(selected);
 });
 
-// Respaldo de seguridad por si la red retrasa recursos externos
-setTimeout(finishLoading, 6000);
+// Respaldo de seguridad prolongado (25s) para conexiones móviles lentas
+setTimeout(finishLoading, 25000);
 
 const environment = createAmbiente(scene, sun, requestRender);
 const clock = new THREE.Clock();
@@ -407,16 +414,36 @@ function focusStoryPoint(key, index) {
   drawMinimap();
 }
 
+let cachedRect = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+function updateCachedRect() {
+  if (renderer && renderer.domElement) {
+    cachedRect = renderer.domElement.getBoundingClientRect();
+  }
+}
+addEventListener('resize', updateCachedRect);
+updateCachedRect();
+
+const _projVector = new THREE.Vector3();
 function updateStoryPointPositions() {
-  const rect = renderer.domElement.getBoundingClientRect();
-  storyPointButtons.forEach(({ button, point }) => {
-    const projected = new THREE.Vector3(point.posicion.x, point.posicion.y, point.posicion.z).project(camera);
-    const visible = projected.z >= -1 && projected.z <= 1 && Math.abs(projected.x) <= 1.08 && Math.abs(projected.y) <= 1.08;
-    button.hidden = !visible;
-    if (!visible) return;
-    button.style.left = `${rect.left + (projected.x + 1) * rect.width / 2}px`;
-    button.style.top = `${rect.top + (1 - projected.y) * rect.height / 2}px`;
-  });
+  if (storyPointButtons.length === 0) return;
+  const rw = cachedRect.width;
+  const rh = cachedRect.height;
+  const rl = cachedRect.left;
+  const rt = cachedRect.top;
+
+  for (let i = 0; i < storyPointButtons.length; i++) {
+    const { button, point } = storyPointButtons[i];
+    _projVector.set(point.posicion.x, point.posicion.y, point.posicion.z).project(camera);
+    const visible = _projVector.z >= -1 && _projVector.z <= 1 && Math.abs(_projVector.x) <= 1.08 && Math.abs(_projVector.y) <= 1.08;
+    if (button.hidden !== !visible) {
+      button.hidden = !visible;
+    }
+    if (!visible) continue;
+    const px = Math.round(rl + (_projVector.x + 1) * rw / 2);
+    const py = Math.round(rt + (1 - _projVector.y) * rh / 2);
+    button.style.left = `${px}px`;
+    button.style.top = `${py}px`;
+  }
 }
 
 function showInfo(key, focus = false) {

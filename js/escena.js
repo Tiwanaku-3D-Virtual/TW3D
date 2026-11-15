@@ -17,10 +17,10 @@ export function createScene(container) {
     antialias: true,
     powerPreference: 'high-performance'
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
@@ -40,12 +40,12 @@ export function createScene(container) {
   hemi.name = 'luz-hemisferica';
   scene.add(hemi);
 
-  // Luz solar direccional principal con sombras suaves de alta resolución (2048x2048)
+  // Luz solar direccional principal optimizada (1024x1024 para fluidez en cualquier GPU)
   const sun = new THREE.DirectionalLight(0xffbe73, 3.0);
   sun.name = 'luz-solar-principal';
   sun.position.set(-48, 18, 30);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.left = -110;
   sun.shadow.camera.right = 110;
   sun.shadow.camera.top = 110;

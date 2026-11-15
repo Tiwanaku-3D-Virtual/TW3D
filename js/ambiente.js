@@ -372,7 +372,7 @@ async function createInstancedIchu(scene) {
 
     const ichuCount = 420;
     const ichuInstanced = new THREE.InstancedMesh(ichuGeo, ichuMat, ichuCount);
-    ichuInstanced.castShadow = true;
+    ichuInstanced.castShadow = false;
     ichuInstanced.receiveShadow = true;
     ichuInstanced.name = 'ichu-instanciado-glb';
 
@@ -404,22 +404,9 @@ async function createInstancedIchu(scene) {
       }
     }
 
-    // Raycaster vertical hacia abajo sobre el suelo
-    const raycaster = new THREE.Raycaster();
-    const rayDown = new THREE.Vector3(0, -1, 0);
-
-    function placeInstances(targetGround) {
+    function placeInstances() {
       positions.forEach((p, i) => {
-        let groundY = terrainHeight(p.x, p.z);
-        if (targetGround) {
-          raycaster.set(new THREE.Vector3(p.x, 60, p.z), rayDown);
-          raycaster.far = 120;
-          const hits = raycaster.intersectObject(targetGround, false);
-          if (hits.length > 0) {
-            groundY = hits[0].point.y;
-          }
-        }
-
+        const groundY = terrainHeight(p.x, p.z);
         // Apoyada exactamente sobre el relieve de la tierra
         const finalY = groundY - 0.04;
         dummy.position.set(p.x, finalY, p.z);
@@ -440,9 +427,7 @@ async function createInstancedIchu(scene) {
       scene.add(ichuInstanced);
     }
 
-    onTerrainReady((mesh) => {
-      placeInstances(mesh);
-    });
+    placeInstances();
   } catch (err) {
     console.warn('No se pudo instanciar ichu.glb:', err);
   }
@@ -505,7 +490,7 @@ async function createInstancedRocks(scene) {
 
     const rockCount = 140;
     const rockInstanced = new THREE.InstancedMesh(rockGeo, rockMat, rockCount);
-    rockInstanced.castShadow = true;
+    rockInstanced.castShadow = false;
     rockInstanced.receiveShadow = true;
     rockInstanced.name = 'piedras-G-instanciadas';
 
@@ -537,21 +522,9 @@ async function createInstancedRocks(scene) {
       }
     }
 
-    const raycaster = new THREE.Raycaster();
-    const rayDown = new THREE.Vector3(0, -1, 0);
-
-    function placeRocks(targetGround) {
+    function placeRocks() {
       positions.forEach((p, i) => {
-        let groundY = terrainHeight(p.x, p.z);
-        if (targetGround) {
-          raycaster.set(new THREE.Vector3(p.x, 60, p.z), rayDown);
-          raycaster.far = 120;
-          const hits = raycaster.intersectObject(targetGround, false);
-          if (hits.length > 0) {
-            groundY = hits[0].point.y;
-          }
-        }
-
+        const groundY = terrainHeight(p.x, p.z);
         // Hundir ligeramente (10 a 14 cm) para que la roca asiente sólidamente en el terreno sin flotar
         const finalY = groundY - 0.12;
         dummy.position.set(p.x, finalY, p.z);
@@ -576,9 +549,7 @@ async function createInstancedRocks(scene) {
       scene.add(rockInstanced);
     }
 
-    onTerrainReady((mesh) => {
-      placeRocks(mesh);
-    });
+    placeRocks();
   } catch (err) {
     console.warn('No se pudo instanciar piedra_G.glb:', err);
   }

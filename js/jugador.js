@@ -90,13 +90,19 @@ export function createJugador(camera, renderer, orbitControls, button, site = nu
   let currentAction = null;
   let characterLoaded = false;
   let characterModel = null;
+  let characterLoadingStarted = false;
 
   const gltfLoader = new GLTFLoader();
-  gltfLoader.load(
-    'assets/models/tigre_humanoide.glb',
-    (gltf) => {
-      characterModel = gltf.scene;
-      characterModel.name = 'malla-tigre-humanoide';
+
+  function loadCharacter() {
+    if (characterLoadingStarted) return;
+    characterLoadingStarted = true;
+
+    gltfLoader.load(
+      'assets/models/tigre_humanoide.glb',
+      (gltf) => {
+        characterModel = gltf.scene;
+        characterModel.name = 'malla-tigre-humanoide';
 
       // Activar sombras y optimizar materiales PBR
       characterModel.traverse((child) => {
@@ -209,6 +215,14 @@ export function createJugador(camera, renderer, orbitControls, button, site = nu
     undefined,
     (err) => console.error('Error cargando modelo tigre_humanoide.glb:', err)
   );
+  }
+
+  // Carga diferida en reposo para no competir con el renderizado inicial de la escena
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(() => setTimeout(loadCharacter, 2500));
+  } else {
+    setTimeout(loadCharacter, 3500);
+  }
 
   const walkableModels = [
     { group: site?.getObjectByName('akapana'), minX: -64, maxX: -26, minZ: 14, maxZ: 54 },
@@ -289,6 +303,7 @@ export function createJugador(camera, renderer, orbitControls, button, site = nu
 
   function enter() {
     if (navigator.maxTouchPoints > 0 && !matchMedia('(pointer:fine)').matches) return;
+    loadCharacter();
     const x = 3.2;
     const z = 20.0;
     const y = groundAt(x, z);
