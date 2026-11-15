@@ -7,14 +7,14 @@ export function createScene(container) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#3d2a1d');
 
-  // Niebla lineal solo en el horizonte lejano (110 a 280): nitidez absoluta en el primer y medio plano
-  scene.fog = new THREE.Fog(0x422a1c, 110, 280);
+  // Sin niebla artificial para máxima nitidez del horizonte y visión nocturna limpia
+  scene.fog = null;
 
   const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 700);
   camera.position.set(112, 95, 125);
 
   const renderer = new THREE.WebGLRenderer({
-    antialias: false,
+    antialias: true,
     powerPreference: 'high-performance'
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));

@@ -61,14 +61,13 @@ THREE.DefaultLoadingManager.onLoad = requestRender;
 const container = document.querySelector('#map-canvas');
 const { scene, camera, renderer, controls, sun, outlinePass } = createScene(container);
 
-// Motor de mejoras cinematográficas (iluminación, atmósfera, bloom y color grading)
+// Motor de iluminación y atmósfera ceremonial (nitidez nativa sin pases de difuminación/film)
 const cinematic = new CinematicUpgrade({
   scene,
   camera,
   renderer,
   controls,
-  outlinePass,
-  enableDoF: false
+  outlinePass
 });
 
 // Inicialización asíncrona del sistema de antorchas ceremoniales (Pebetero.glb) con antorcha de cámara

@@ -620,13 +620,8 @@ export function createAmbiente(scene, sun, onChange = () => {}) {
     mode = ((value % 3) + 3) % 3;
     applySky(mode);
 
-    // Niebla solo en el horizonte lejano (110 a 280) para máxima nitidez en todo el recinto
-    const fogColors = ['#422a1c', '#887b68', '#090f1d'];
-    if (scene.fog) {
-      scene.fog.color.set(fogColors[mode]);
-      scene.fog.near = 110;
-      scene.fog.far = 280;
-    }
+    // Sin niebla artificial para evitar velos difusos de lejos y de noche
+    scene.fog = null;
 
     // Configuración solar y lunar
     if (mode === 0) {
