@@ -1,52 +1,66 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { createTerrain } from './ambiente.js';
 
 export function createScene(container) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#a9b4ae');
-  scene.fog = null;
-  const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, .1, 700);
+  scene.background = new THREE.Color('#3d2a1d');
+
+  // Niebla lineal solo en el horizonte lejano (110 a 280): nitidez absoluta en el primer y medio plano
+  scene.fog = new THREE.Fog(0x422a1c, 110, 280);
+
+  const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 700);
   camera.position.set(112, 95, 125);
-  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+
+  const renderer = new THREE.WebGLRenderer({
+    antialias: false,
+    powerPreference: 'high-performance'
+  });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.15;
   container.appendChild(renderer.domElement);
+
+  // Controles de órbita con inercia cinematográfica y encuadre elevado hacia el horizonte
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0, 3);
+  controls.target.set(0, 2.5, 0);
   controls.enableDamping = true;
-  controls.dampingFactor = .06;
+  controls.dampingFactor = 0.05;
   controls.minDistance = 10;
   controls.maxDistance = 220;
-  controls.maxPolarAngle = Math.PI * .47;
-  scene.add(new THREE.HemisphereLight('#e4edf5', '#6e624f', 1.25));
-  const sun = new THREE.DirectionalLight('#fff2d4', 2.15);
-  sun.position.set(-35, 55, 24);
+  controls.maxPolarAngle = Math.PI * 0.47;
+
+  // Iluminación hemisférica sutil
+  const hemi = new THREE.HemisphereLight(0xe89e5a, 0x3a2818, 0.55);
+  hemi.name = 'luz-hemisferica';
+  scene.add(hemi);
+
+  // Luz solar direccional principal con sombras suaves de alta resolución (2048x2048)
+  const sun = new THREE.DirectionalLight(0xffbe73, 3.0);
+  sun.name = 'luz-solar-principal';
+  sun.position.set(-48, 18, 30);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left = -130; sun.shadow.camera.right = 130;
-  sun.shadow.camera.top = 130; sun.shadow.camera.bottom = -130;
-  sun.shadow.normalBias = .03;
-  sun.shadow.bias = -0.0004;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -110;
+  sun.shadow.camera.right = 110;
+  sun.shadow.camera.top = 110;
+  sun.shadow.camera.bottom = -110;
+  sun.shadow.camera.near = 0.5;
+  sun.shadow.camera.far = 350;
+  sun.shadow.normalBias = 0.025;
+  sun.shadow.bias = -0.0005;
   scene.add(sun);
-  const ground = createTerrain(); scene.add(ground);
 
-  // Postprocesamiento: EffectComposer con RenderPass, OutlinePass para siluetas de modelos y FXAA
-  const composer = new EffectComposer(renderer);
-  const renderPass = new RenderPass(scene, camera);
-  composer.addPass(renderPass);
+  // Terreno topográfico auténtico desde suelo.glb
+  const ground = createTerrain();
+  scene.add(ground);
 
+  // OutlinePass para siluetas de monumentos seleccionados
   const outlinePass = new OutlinePass(new THREE.Vector2(innerWidth, innerHeight), scene, camera);
   outlinePass.enabled = false;
   outlinePass.edgeStrength = 4.5;
@@ -55,28 +69,15 @@ export function createScene(container) {
   outlinePass.pulsePeriod = 2.6;
   outlinePass.visibleEdgeColor.set('#ffd54f');
   outlinePass.hiddenEdgeColor.set('#6d4c00');
-  composer.addPass(outlinePass);
-
-  const outputPass = new OutputPass();
-  composer.addPass(outputPass);
-
-  const fxaaPass = new ShaderPass(FXAAShader);
-  const pr = renderer.getPixelRatio();
-  fxaaPass.material.uniforms['resolution'].value.x = 1 / (innerWidth * pr);
-  fxaaPass.material.uniforms['resolution'].value.y = 1 / (innerHeight * pr);
-  composer.addPass(fxaaPass);
 
   const resize = () => {
     const w = innerWidth, h = innerHeight;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
-    composer.setSize(w, h);
-    outlinePass.resolution.set(w, h);
-    const pixelRatio = renderer.getPixelRatio();
-    fxaaPass.material.uniforms['resolution'].value.x = 1 / (w * pixelRatio);
-    fxaaPass.material.uniforms['resolution'].value.y = 1 / (h * pixelRatio);
+    if (outlinePass) outlinePass.resolution.set(w, h);
   };
   addEventListener('resize', resize);
-  return { scene, camera, renderer, controls, sun, ground, composer, outlinePass };
+
+  return { scene, camera, renderer, controls, sun, ground, outlinePass };
 }

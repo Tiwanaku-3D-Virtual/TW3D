@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#120e0a">
+  <meta name="description" content="Sala de exhibición monumental 3D de los monumentos arqueológicos de Tiwanaku.">
+  <title>Tiwanaku 3D — Sala de Exhibición Monumental</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <link rel="stylesheet" href="css/exhibicion.css">
+</head>
+<body>
+
+  <!-- Canvas 3D Three.js -->
+  <div id="exhibicion-canvas" aria-label="Visualizador 3D de piezas arqueológicas de Tiwanaku"></div>
+
+  <!-- Capa interactiva de puntos de historia en pantalla 3D -->
+  <div id="story-points" class="story-points" aria-label="Puntos de historia del monumento"></div>
+
+  <!-- Viñeta cinematográfica sobre el viewport -->
+  <div class="viewport-vignette"></div>
+
+  <!-- Indicador sutil de carga entre modelos -->
+  <div id="model-loading" class="model-loading-indicator" role="status" aria-live="polite">
+    <div class="spinner"></div>
+    <span class="loading-label">Cargando monumento…</span>
+  </div>
+
+  <!-- BARRA SUPERIOR: ATMÓSFERA Y NAVEGACIÓN -->
+  <header class="top-bar">
+    <a href="index.html" class="brand-nav" aria-label="Volver al recorrido libre del sitio">
+      <span class="brand-icon">←</span>
+      <div class="brand-text">
+        <span class="brand-title">TIWANAKU 3D</span>
+        <span class="brand-subtitle">VOLVER AL RECORRIDO</span>
+      </div>
+    </a>
+
+    <!-- Selector de Atmósfera Centrado (Día, Ocaso, Noche) -->
+    <nav class="atmosphere-bar" aria-label="Seleccionar atmósfera lumínica">
+      <button type="button" class="atmo-btn" data-atmo="day" aria-label="Atmósfera de Día">
+        <span>☀️</span> Día
+      </button>
+      <button type="button" class="atmo-btn active" data-atmo="sunset" aria-label="Atmósfera de Ocaso">
+        <span>🌅</span> Ocaso
+      </button>
+      <button type="button" class="atmo-btn" data-atmo="night" aria-label="Atmósfera de Noche">
+        <span>🌙</span> Noche
+      </button>
+    </nav>
+
+    <!-- Controles complementarios de exhibición -->
+    <div class="top-actions">
+      <button type="button" id="btn-auto-rotate" class="pill-action-btn" aria-label="Activar o desactivar rotación automática">
+        🔄 Giro Automático
+      </button>
+    </div>
+  </header>
+
+  <!-- PANEL FLOTANTE IZQUIERDO: FICHA ARQUEOLÓGICA Y FOTOGRAFÍA REAL -->
+  <aside id="monument-panel" class="monument-panel" aria-live="polite">
+    <div class="panel-header">
+      <div id="panel-eyebrow" class="panel-eyebrow">SALA DE EXHIBICIÓN</div>
+      <div id="point-tag" class="point-tag" style="display: none;"></div>
+      <h1 id="panel-title" class="panel-title">Puerta del Sol</h1>
+      <span id="panel-period" class="panel-period">500–900 d.C.</span>
+    </div>
+
+    <!-- Fotografía real con opción de zoom en lightbox -->
+    <div id="panel-image-wrap" class="panel-image-wrap" title="Clic para ampliar fotografía arqueológica">
+      <img id="panel-image" class="panel-image" src="assets/images/sungate.jpg" alt="Fotografía arqueológica de Puerta del Sol" loading="lazy" />
+      <span class="image-badge">🔍 Ampliar foto</span>
+    </div>
+
+    <!-- Botón de Audio Guía con atajo de teclado [E] y Regulación de Volumen -->
+    <div class="audio-guide-box">
+      <button type="button" id="btn-audio-guide" class="audio-guide-btn" aria-label="Escuchar explicación del monumento (tecla E)">
+        <span class="audio-label">🔊 Escuchar explicación</span>
+        <span class="audio-key-tag">E</span>
+      </button>
+      <div class="audio-progress-bar-wrap">
+        <div id="audio-progress-bar" class="audio-progress-bar"></div>
+      </div>
+      <div class="audio-volume-row">
+        <span class="audio-vol-tag">VOL.</span>
+        <input type="range" id="audio-volume-slider" min="0" max="100" value="85" class="gold-range" aria-label="Regular volumen de explicación" />
+        <button type="button" id="btn-audio-mute" class="mute-toggle-btn" aria-label="Silenciar audio">🔊</button>
+      </div>
+    </div>
+
+    <p id="panel-desc" class="panel-description">
+      Portal ceremonial monolítico labrado en una sola pieza de andesita de más de diez toneladas.
+    </p>
+
+    <dl class="panel-details-list">
+      <div class="detail-item">
+        <dt>Función Ceremonial</dt>
+        <dd id="panel-function">Portal ritual y marcador calendárico de solsticios.</dd>
+      </div>
+      <div class="detail-item">
+        <dt>Dato Curioso</dt>
+        <dd id="panel-curiosity">El friso superior exhibe a la divinidad solar rodeada por 48 seres alados.</dd>
+      </div>
+    </dl>
+  </aside>
+
+  <!-- BARRA INFERIOR (DOCK SELECTOR DE 10 MONUMENTOS) -->
+  <footer class="bottom-dock-wrap">
+    <div class="dock-container">
+      <button type="button" id="dock-prev" class="dock-nav-btn prev" aria-label="Desplazar monumentos a la izquierda">‹</button>
+      <div id="dock-scroll" class="dock-scroll" role="tablist" aria-label="Lista de monumentos para exhibir">
+        <!-- Generado dinámicamente desde js/exhibicion.js -->
+      </div>
+      <button type="button" id="dock-next" class="dock-nav-btn next" aria-label="Desplazar monumentos a la derecha">›</button>
+    </div>
+    <div class="dock-help-hint">Arrastra para girar · Rueda para zoom · Clic derecho para desplazar</div>
+  </footer>
+
+  <!-- MODAL LIGHTBOX PARA AMPLIACIÓN DE FOTOGRAFÍA REAL -->
+  <div id="lightbox-modal" class="lightbox-modal" role="dialog" aria-modal="true" aria-label="Ampliación de fotografía arqueológica">
+    <div class="lightbox-content">
+      <button type="button" id="lightbox-close" class="lightbox-close" aria-label="Cerrar ampliación">×</button>
+      <img id="lightbox-img" class="lightbox-img" src="" alt="" />
+      <div id="lightbox-caption" class="lightbox-caption"></div>
+    </div>
+  </div>
+
+  <!-- Script principal de la sala de exhibición -->
+  <script type="module" src="js/exhibicion.js"></script>
+</body>
+</html>

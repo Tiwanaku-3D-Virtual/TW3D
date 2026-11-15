@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-const stone = new THREE.MeshStandardMaterial({ color: '#948a73', roughness: .96 });
-function slab(group, w, d, y = .35) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, .7, d), stone);
+const stone = new THREE.MeshStandardMaterial({ color: '#948a73', roughness: 0.96 });
+function slab(group, w, d, y = 0.35) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.7, d), stone);
   m.position.y = y;
   m.castShadow = m.receiveShadow = true;
   group.add(m);
@@ -86,27 +86,12 @@ export function createKheriKala() {
   return g;
 }
 
-export function createDoublePerimeter(){
-  const group=new THREE.Group();group.name='muro-perimetral';
-  const stoneTexture=new THREE.TextureLoader().load('assets/textures/GroundDirtRocky020_COL_2K.jpg');
-  stoneTexture.colorSpace=THREE.SRGBColorSpace;
-  stoneTexture.wrapS=stoneTexture.wrapT=THREE.RepeatWrapping;
-  stoneTexture.repeat.set(2,2);
-  const mat=new THREE.MeshStandardMaterial({map:stoneTexture,color:'#c8b99a',roughness:.98});
-  const jambMat=new THREE.MeshStandardMaterial({map:stoneTexture,color:'#ad9e80',roughness:.96});
-  const blocks=[];const add=(x,y,z,sx,sy,sz)=>blocks.push([x,y,z,sx,sy,sz]);
-  const makeSide=(halfX,halfZ,y,gap,inner=false)=>{
-    for(let x=-halfX;x<=halfX;x+=2.1){if(Math.abs(x)<gap/2)continue;for(let h=0;h<3;h++)add(x,y+h*.85,halfZ,2.1,.82,1.1);}
-    for(let x=-halfX;x<=halfX;x+=2.1){if(Math.abs(x)<gap/2)continue;for(let h=0;h<3;h++)add(x,y+h*.85,-halfZ,2.1,.82,1.1);}
-    for(let z=-halfZ+2;z<halfZ;z+=2.1){if(Math.abs(z)<gap/2)continue;for(let h=0;h<3;h++)add(halfX,y+h*.85,z,1.1,.82,2.1);}
-    for(let z=-halfZ+2;z<halfZ;z+=2.1){if(Math.abs(z)<gap/2)continue;for(let h=0;h<3;h++)add(-halfX,y+h*.85,z,1.1,.82,2.1);}
-  };
-  makeSide(71,55,0,10);makeSide(68,52,0,10,true);
-  const geo=new THREE.BoxGeometry(1,1,1);const mesh=new THREE.InstancedMesh(geo,mat,blocks.length);const d=new THREE.Object3D();const color=new THREE.Color();
-  blocks.forEach(([x,y,z,sx,sy,sz],i)=>{d.position.set(x,y+.4,z);d.scale.set(sx,sy,sz);d.rotation.y=(Math.random()-.5)*.03;d.updateMatrix();mesh.setMatrixAt(i,d.matrix);color.set('#b7a987').offsetHSL(0,0,(Math.random()-.5)*.08);mesh.setColorAt(i,color);});
-  mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);
-  // Jambas de piedra señalan las entradas abiertas sin bloquear el paso.
-  for(const x of [-5.2,5.2])for(const z of [-53,53]){const jamb=new THREE.Mesh(new THREE.BoxGeometry(.9,2.8,1.2),jambMat);jamb.position.set(x,1.4,z);jamb.castShadow=true;group.add(jamb);}
-  for(const z of [-5.2,5.2])for(const x of [-69,69]){const jamb=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.8,.9),jambMat);jamb.position.set(x,1.4,z);jamb.castShadow=true;group.add(jamb);}
+/**
+ * Los muros perimetrales oficiales y taludes ahora se integran directamente
+ * desde el modelo 3D assets/models/muros.glb en modelos-sitio.js.
+ */
+export function createDoublePerimeter() {
+  const group = new THREE.Group();
+  group.name = 'muro-perimetral';
   return group;
 }

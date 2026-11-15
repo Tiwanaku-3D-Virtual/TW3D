@@ -1,0 +1,984 @@
+/* ==========================================================================
+   ESTILOS CINEMATOGRÁFICOS Y GLASSMORPHISM - TIWANAKU 3D
+   ========================================================================== */
+
+:root {
+  --gold-primary: #e5c158;
+  --gold-soft: rgba(229, 193, 88, 0.32);
+  --gold-glow: rgba(229, 193, 88, 0.45);
+  --glass-bg: rgba(20, 15, 10, 0.65);
+  --glass-border: rgba(255, 204, 102, 0.22);
+  --text-light: #f5ede0;
+  --text-muted: #b8afa0;
+}
+
+/* Viñeta cinematográfica suave sobre toda la pantalla */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0) 55%,
+    rgba(10, 7, 4, 0.45) 100%
+  );
+  z-index: 1;
+}
+
+/* Contenedor UI principal superpuesto al canvas 3D */
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 1. Menú Superior (Navegación) */
+.map-header {
+  position: fixed !important;
+  top: 16px !important;
+  left: 24px !important;
+  right: 24px !important;
+  z-index: 50 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  pointer-events: none !important;
+}
+
+/* Logo (Izquierda) */
+.brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+  color: var(--text-light) !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+}
+
+.brand-icon {
+  font-size: 26px !important;
+  line-height: 1 !important;
+}
+
+.brand-text {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.brand-text b,
+.brand b {
+  font-family: Cinzel, serif !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  color: #ffffff !important;
+  line-height: 1.1 !important;
+}
+
+.brand-text small,
+.brand small {
+  font-size: 8.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.16em !important;
+  color: var(--gold-primary) !important;
+  margin-top: 2px !important;
+}
+
+/* Barra Central: Contenedor con forma de píldora */
+.nav-center-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  padding: 5px 8px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  pointer-events: auto !important;
+}
+
+.glass-pill-btn,
+.header-actions .glass-button,
+.header-actions button,
+.header-actions summary.glass-button {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: var(--text-light) !important;
+  border-radius: 999px !important;
+  padding: 7px 15px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  font-family: Outfit, system-ui, sans-serif !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+.glass-pill-btn:hover,
+.header-actions .glass-button:hover,
+.header-actions button:hover,
+.header-actions summary.glass-button:hover {
+  background: rgba(255, 204, 102, 0.12) !important;
+  border-color: rgba(255, 204, 102, 0.35) !important;
+  color: #ffd885 !important;
+}
+
+/* Botón activo con contorno dorado brillante */
+.glass-pill-btn.active,
+.header-actions .glass-button.active,
+.header-actions button.active,
+.header-actions summary.glass-button.active,
+#btn-time.active {
+  border: 1px solid var(--gold-primary) !important;
+  box-shadow: 0 0 14px rgba(229, 193, 88, 0.55), inset 0 0 6px rgba(229, 193, 88, 0.2) !important;
+  background: rgba(229, 193, 88, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* Iconos / Acciones Derecha */
+.header-actions-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  pointer-events: auto !important;
+}
+
+.header-actions-right .glass-pill-btn {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+}
+
+.header-actions-right .glass-pill-btn:hover {
+  border-color: var(--gold-primary) !important;
+  color: #ffd885 !important;
+  box-shadow: 0 0 12px rgba(229, 193, 88, 0.35) !important;
+}
+
+.glass-pill-btn.icon-only {
+  padding: 7px 12px !important;
+  font-size: 16px !important;
+  min-width: 38px !important;
+  justify-content: center !important;
+}
+
+/* 2. Panel Izquierdo (Información del Monumento): alineado a la izquierda, centrado verticalmente */
+.info-card {
+  position: fixed !important;
+  left: 24px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 335px !important;
+  max-width: calc(100vw - 48px) !important;
+  max-height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  z-index: 40 !important;
+  pointer-events: auto !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  padding: 22px 20px !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease !important;
+}
+
+.info-card::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Botón flotante para colapsar hacia la izquierda en el borde derecho */
+.panel-collapse-btn {
+  position: absolute !important;
+  top: 50% !important;
+  right: -14px !important;
+  transform: translateY(-50%) !important;
+  width: 26px !important;
+  height: 52px !important;
+  border-radius: 0 12px 12px 0 !important;
+  background: rgba(22, 17, 12, 0.92) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 204, 102, 0.25) !important;
+  border-left: none !important;
+  color: #ffd885 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 20px !important;
+  font-family: Outfit, sans-serif !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.45) !important;
+  transition: all 0.25s ease !important;
+  z-index: 10 !important;
+}
+
+.panel-collapse-btn:hover {
+  background: rgba(45, 34, 20, 0.98) !important;
+  color: #fff !important;
+  width: 30px !important;
+  right: -18px !important;
+  border-color: var(--gold-primary) !important;
+}
+
+/* Estado colapsado: el panel se desliza a la izquierda y la pestaña permanece visible */
+.info-card.is-hidden {
+  transform: translateY(-50%) translateX(calc(-100% - 24px)) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.info-card.is-hidden .panel-collapse-btn {
+  transform: translateY(-50%) rotate(180deg) !important;
+}
+
+/* Tipografía y secciones del Panel Izquierdo */
+.info-card .eyebrow {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.16em !important;
+  color: var(--gold-primary) !important;
+  text-transform: uppercase !important;
+  margin-bottom: 8px !important;
+}
+
+.info-card h1 {
+  font-family: Cinzel, serif !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  color: #ffffff !important;
+  text-transform: uppercase !important;
+  margin: 10px 0 4px !important;
+  letter-spacing: 0.04em !important;
+}
+
+.info-card .period {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--gold-primary) !important;
+  margin: 0 0 10px !important;
+}
+
+.info-card p {
+  font-size: 13.5px !important;
+  line-height: 1.55 !important;
+  color: var(--text-muted) !important;
+  margin: 0 0 12px !important;
+}
+
+.info-card dl {
+  margin: 12px 0 16px !important;
+}
+
+.info-card dt {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: var(--gold-primary) !important;
+  margin: 10px 0 2px !important;
+}
+
+.info-card dd {
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  color: var(--text-muted) !important;
+  margin-left: 0 !important;
+}
+
+.info-card .gold-button {
+  width: 100% !important;
+  border-radius: 999px !important;
+  padding: 12px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  background: linear-gradient(110deg, #d4a737 0%, #f6e05e 50%, #d4a737 100%) !important;
+  color: #1a150e !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 6px 20px rgba(212, 167, 55, 0.35) !important;
+  transition: all 0.25s ease !important;
+  margin-top: 10px !important;
+}
+
+.info-card .gold-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(246, 224, 94, 0.55) !important;
+}
+
+.info-card .hint {
+  font-size: 11px !important;
+  color: rgba(245, 237, 224, 0.5) !important;
+  text-align: center !important;
+  margin: 12px 0 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* 3. Paneles Derechos (Controles - Apilados verticalmente sin solaparse) */
+.right-panel-stack {
+  position: fixed !important;
+  top: 76px !important;
+  right: 24px !important;
+  width: 275px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 15px !important;
+  z-index: 40 !important;
+  pointer-events: none !important;
+  max-height: calc(100vh - 96px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.right-panel-stack::-webkit-scrollbar {
+  display: none !important;
+}
+
+.right-panel-stack > * {
+  pointer-events: auto !important;
+  position: relative !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.right-panel-stack .audio-settings-card.is-hidden {
+  display: none !important;
+}
+
+/* 4. Esquina Inferior Derecha: texto indicativo pequeño */
+.map-footer-hint {
+  position: fixed !important;
+  bottom: 16px !important;
+  right: 24px !important;
+  z-index: 20 !important;
+  pointer-events: none !important;
+  font-size: 11px !important;
+  letter-spacing: 0.04em !important;
+  color: rgba(245, 237, 224, 0.65) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85) !important;
+  font-family: Outfit, sans-serif !important;
+}
+
+/* Tarjetas y paneles con efecto Glassmorphism cinematográfico */
+.info-card,
+.nearby-card,
+.guide-dialogue,
+.modal-card,
+.minimap-wrap,
+.model-options,
+.secret-plaque,
+.mission-counter {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.35s ease,
+              box-shadow 0.35s ease,
+              opacity 0.25s ease,
+              visibility 0.25s ease;
+}
+
+/* Botones de acción en la barra superior */
+.header-actions .glass-button,
+.header-actions button,
+.header-actions summary.glass-button {
+  background: rgba(22, 19, 15, 0.75) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: var(--text-light) !important;
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all 0.25s ease !important;
+}
+
+.header-actions .glass-button:hover,
+.header-actions button:hover,
+.header-actions summary.glass-button:hover {
+  border-color: var(--gold-primary) !important;
+  box-shadow: 0 0 16px rgba(229, 193, 88, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+/* Estado activo para el botón de atmósfera / modo seleccionado y explorador */
+.header-actions .glass-button.active,
+.header-actions button.active,
+.header-actions summary.glass-button.active,
+.header-actions .glass-button.is-playing {
+  background: linear-gradient(135deg, rgba(229, 193, 88, 0.35), rgba(163, 126, 36, 0.25)) !important;
+  border-color: var(--gold-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px var(--gold-glow), inset 0 0 8px rgba(229, 193, 88, 0.22) !important;
+}
+
+/* Botones dorados principales con brillo cinematográfico */
+.gold-button,
+#btn-detail,
+.btn-detalle,
+.cta-button {
+  background: linear-gradient(90deg, #d8b24c 0%, #f1d785 50%, #cfa53b 100%) !important;
+  color: #16130d !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 6px 22px rgba(216, 178, 76, 0.35) !important;
+  transition: all 0.3s ease !important;
+}
+
+.gold-button:hover,
+#btn-detail:hover,
+.btn-detalle:hover,
+.cta-button:hover {
+  box-shadow: 0 8px 28px rgba(241, 215, 133, 0.55) !important;
+  transform: translateY(-2px);
+}
+
+/* Marcadores numéricos 3D con doble anillo dorado elegante y animación de pulso */
+.story-point,
+.hotspot,
+.marker {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 35%, #fff2be, #d4a737 70%, #9e7417 100%) !important;
+  border: 2px solid #fff8e0 !important;
+  color: #1b160c !important;
+  font-family: Outfit, sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 0 3px rgba(229, 193, 88, 0.35), 0 4px 14px rgba(0, 0, 0, 0.7) !important;
+  cursor: pointer;
+  transform: translate(-50%, -50%) !important;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease !important;
+  position: absolute !important;
+}
+
+.story-point::after,
+.hotspot::after,
+.marker::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 220, 120, 0.65);
+  animation: pulse-ring 2.4s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+  pointer-events: none;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.85; }
+  50% { transform: scale(1.38); opacity: 0; }
+  100% { transform: scale(1.38); opacity: 0; }
+}
+
+.story-point:hover,
+.story-point:focus-visible,
+.hotspot:hover,
+.marker:hover,
+.story-point.is-active,
+.hotspot.active,
+.marker.active {
+  transform: translate(-50%, -50%) scale(1.22) !important;
+  z-index: 20 !important;
+  box-shadow: 0 0 0 4px rgba(255, 230, 140, 0.6), 0 0 20px rgba(229, 193, 88, 0.7) !important;
+}
+
+/* 3. Lista de botones debajo del minimapa */
+.minimap-hotspots {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  width: 100% !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid rgba(229, 193, 88, 0.2) !important;
+  max-height: 125px !important;
+  overflow-y: auto !important;
+}
+
+.hotspot-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  padding: 5px 9px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(229, 193, 88, 0.28) !important;
+  background: rgba(30, 25, 20, 0.65) !important;
+  color: var(--text-light) !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  user-select: none !important;
+}
+
+.hotspot-chip:hover {
+  border-color: var(--gold-primary) !important;
+  background: rgba(229, 193, 88, 0.25) !important;
+  color: #ffd885 !important;
+  transform: translateY(-1px) !important;
+}
+
+.hotspot-chip.active {
+  border-color: var(--gold-primary) !important;
+  background: linear-gradient(135deg, rgba(229, 193, 88, 0.38), rgba(163, 126, 36, 0.28)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(229, 193, 88, 0.45) !important;
+}
+
+@media (max-width: 700px) {
+  .map-header {
+    top: 12px !important;
+    left: 12px !important;
+    right: 12px !important;
+  }
+  .info-card {
+    top: auto !important;
+    bottom: 80px !important;
+    left: 12px !important;
+    width: calc(100% - 24px) !important;
+    max-height: 40vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* ==========================================================================
+   FOTOGRAFÍAS ARQUEOLÓGICAS EN TARJETAS Y MODALES
+   ========================================================================== */
+.info-card-media {
+  width: 100%;
+  margin: 8px 0 12px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(229, 193, 88, 0.32);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: rgba(10, 8, 6, 0.6);
+  position: relative;
+}
+
+.info-image {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.info-card:hover .info-image {
+  transform: scale(1.035);
+}
+
+.modal-card-media {
+  width: 100%;
+  margin: 12px 0 16px 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(229, 193, 88, 0.38);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: rgba(10, 8, 6, 0.7);
+}
+
+.modal-image {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.modal-card:hover .modal-image {
+  transform: scale(1.02);
+}
+
+/* ==========================================================================
+   PANEL FLOTANTE DE AUDIO, VOLUMEN E ILUMINACIÓN (MÚSICA Y AMBIENTE)
+   ========================================================================== */
+.audio-settings-card {
+  width: 100% !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(135%) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 11px !important;
+  color: var(--text-light) !important;
+  font-family: 'Outfit', sans-serif !important;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease !important;
+  box-sizing: border-box !important;
+}
+
+.audio-settings-card.is-hidden {
+  display: none !important;
+}
+
+.audio-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.music-note-icon {
+  font-size: 1.6rem;
+  color: var(--gold-primary);
+  line-height: 1;
+}
+
+.audio-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffca44;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.audio-panel-subtitle {
+  font-size: 0.75rem;
+  color: #a4b49e;
+}
+
+.close-audio-panel {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #a4b49e;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.18s, background 0.18s;
+}
+
+.close-audio-panel:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.audio-playback-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 44px;
+  gap: 8px;
+}
+
+.audio-ctrl-btn {
+  background: rgba(35, 48, 40, 0.65);
+  border: 1px solid rgba(229, 193, 88, 0.32);
+  color: #f0ede5;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.audio-ctrl-btn:hover {
+  background: rgba(229, 193, 88, 0.25);
+  border-color: #ffd257;
+  color: #fff;
+}
+
+.audio-ctrl-btn.active {
+  background: rgba(229, 193, 88, 0.38);
+  border-color: #ffd257;
+  color: #ffd257;
+  box-shadow: 0 0 10px rgba(229, 193, 88, 0.25);
+}
+
+.audio-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #ffd257;
+  min-width: 38px;
+}
+
+.gold-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #d4af37 0%, #d4af37 var(--range-pct, 85%), rgba(255, 255, 255, 0.25) var(--range-pct, 85%), rgba(255, 255, 255, 0.25) 100%);
+  outline: none;
+  cursor: pointer;
+}
+
+.gold-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #5d6773;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.gold-range::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  background: #ffd257;
+}
+
+.gold-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #5d6773;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+}
+
+.audio-status-text {
+  font-size: 0.76rem;
+  color: #a4b49e;
+  margin-top: -3px;
+}
+
+.audio-divider {
+  border: none;
+  border-top: 1px solid rgba(229, 193, 88, 0.2);
+  margin: 2px 0;
+}
+
+.lighting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffd257;
+  letter-spacing: 0.05em;
+}
+
+.lighting-value {
+  color: #f0ede5;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.panel-fullscreen-btn {
+  background: #caa341;
+  color: #120f0a;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 10px 14px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  margin-top: 2px;
+}
+
+.panel-fullscreen-btn:hover {
+  background: #e5b94d;
+  box-shadow: 0 4px 16px rgba(229, 185, 77, 0.45);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   DESPLEGABLE DE MODELOS (VER MODELOS)
+   ========================================================================== */
+.model-menu {
+  position: relative;
+  pointer-events: auto;
+}
+
+.model-menu > summary {
+  list-style: none !important;
+  cursor: pointer;
+  outline: none;
+}
+
+.model-menu > summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.model-options {
+  position: absolute !important;
+  top: calc(100% + 10px) !important;
+  left: 0 !important;
+  right: auto !important;
+  width: 250px !important;
+  max-height: min(60vh, 380px) !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 8px !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  background: rgba(22, 17, 12, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+  z-index: 100 !important;
+}
+
+.model-options::-webkit-scrollbar {
+  display: none;
+}
+
+.model-options button {
+  width: 100% !important;
+  padding: 8px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--text-light) !important;
+  text-align: left !important;
+  font-size: 12.5px !important;
+  font-family: Outfit, sans-serif !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+}
+
+.model-options button:hover,
+.model-options button:focus-visible {
+  outline: none !important;
+  background: rgba(229, 193, 88, 0.18) !important;
+  border-color: rgba(229, 193, 88, 0.3) !important;
+  color: #ffd885 !important;
+}
+
+/* ==========================================================================
+   PANEL GUÍA DEL RECORRIDO (NARRADORA) Y PROXIMIDAD
+   ========================================================================== */
+.guide-dialogue {
+  position: absolute !important;
+  z-index: 60 !important;
+  pointer-events: auto !important;
+  border-radius: 16px !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease !important;
+}
+
+.guide-dialogue[hidden],
+.guide-dialogue.is-hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.guide-close {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 50% !important;
+  color: var(--text-light) !important;
+  font-size: 19px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+  outline: none !important;
+}
+
+.guide-close:hover {
+  background: rgba(229, 193, 88, 0.3) !important;
+  border-color: var(--gold-primary) !important;
+  color: #ffffff !important;
+  transform: scale(1.1) !important;
+}
+
+.guide-close:active {
+  transform: scale(0.95) !important;
+}
+
+.guide-audio-btn {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.nearby-card {
+  pointer-events: auto !important;
+  z-index: 45 !important;
+}
+
+.nearby-card[hidden],
+.nearby-card.is-hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Estado activo del botón de pantalla completa en la cabecera */
+#btn-fullscreen.active {
+  background: rgba(229, 193, 88, 0.22) !important;
+  border-color: var(--gold-primary) !important;
+  color: #ffd885 !important;
+  box-shadow: 0 0 14px rgba(229, 193, 88, 0.45) !important;
+}
+
+

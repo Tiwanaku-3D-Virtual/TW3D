@@ -39,6 +39,8 @@ export async function loadLocalModel(path, {
   textureRepeat = 1,
   tint,
   tintMode = 'multiply',
+  roughness = 0.88,
+  metalness = 0.04,
   excludeNames = []
 } = {}) {
   const [gltf, albedo, normal] = await Promise.all([
@@ -66,7 +68,12 @@ export async function loadLocalModel(path, {
     normal.wrapS = normal.wrapT = textureRepeat > 1 ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
     normal.repeat.set(textureRepeat, textureRepeat);
   }
-  model.scale.setScalar(scale);
+
+  if (Array.isArray(scale)) {
+    model.scale.set(scale[0], scale[1], scale[2]);
+  } else {
+    model.scale.setScalar(scale);
+  }
   model.updateWorldMatrix(true, true);
 
   let bounds = new THREE.Box3().setFromObject(model);
@@ -103,11 +110,11 @@ export async function loadLocalModel(path, {
         else material.color.multiply(new THREE.Color(tint));
       }
       if (material.map) material.map.colorSpace = THREE.SRGBColorSpace;
-      if ('roughness' in material && !material.roughnessMap) {
-        material.roughness = Math.max(material.roughness ?? 0, .78);
+      if ('roughness' in material) {
+        material.roughness = roughness;
       }
-      if ('metalness' in material && !material.metalnessMap) {
-        material.metalness = Math.min(material.metalness ?? 0, .04);
+      if ('metalness' in material) {
+        material.metalness = metalness;
       }
       material.needsUpdate = true;
     });

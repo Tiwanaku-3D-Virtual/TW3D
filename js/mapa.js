@@ -4,9 +4,10 @@ import { createAmbiente } from './ambiente.js';
 import { createNarratorAudio, createProximityAudio } from './ambiente-sonoro.js';
 import { createSitio } from './estructuras/sitio.js';
 import { createJugador } from './jugador.js';
-import { createGuideNPC } from './guia.js';
 import { addExistingSiteModels } from './modelos-sitio.js';
 import { info } from './info.js';
+import { CinematicUpgrade } from './cinematic-engine.js';
+import { createTorchSystem } from './antorchas.js';
 
 let animationFrame = null;
 function requestRender() {
@@ -14,9 +15,9 @@ function requestRender() {
 }
 
 // Paleta de colores temáticos para el outline de cada modelo arqueológico
-// (El Templete y sus paredes no llevan delineado por solicitud directa para conservar su estética limpia)
 export const structureOutlineColors = {
   puertaSol: { edge: '#ffd54f', hidden: '#6d4c00' },   // Oro Solar resplandeciente
+  puertaLuna: { edge: '#80deea', hidden: '#006064' },  // Plata lunar / Turquesa andino
   akapana: { edge: '#ff6e40', hidden: '#8c2500' },     // Terracota / Cobre andino
   chachapuma: { edge: '#8d6e63', hidden: '#3e2723' },  // Basalto volcánico
   monolito: { edge: '#42a5f5', hidden: '#0d47a1' },    // Lapislázuli / Azul ceremonial (Monolito Ponce)
@@ -58,7 +59,25 @@ THREE.DefaultLoadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
 THREE.DefaultLoadingManager.onLoad = requestRender;
 
 const container = document.querySelector('#map-canvas');
-const { scene, camera, renderer, controls, sun, composer, outlinePass } = createScene(container);
+const { scene, camera, renderer, controls, sun, outlinePass } = createScene(container);
+
+// Motor de mejoras cinematográficas (iluminación, atmósfera, bloom y color grading)
+const cinematic = new CinematicUpgrade({
+  scene,
+  camera,
+  renderer,
+  controls,
+  outlinePass,
+  enableDoF: false
+});
+
+// Inicialización asíncrona del sistema de antorchas ceremoniales (Pebetero.glb) con antorcha de cámara
+createTorchSystem(scene, camera).then((torches) => {
+  cinematic.torchSystem = torches;
+  torches.setAtmosphere(cinematic.currentMode);
+  requestRender();
+});
+
 controls.addEventListener('change', requestRender);
 controls.addEventListener('start', requestRender);
 controls.addEventListener('end', requestRender);
@@ -99,6 +118,7 @@ const storyLayer = document.querySelector('#story-points');
 const storyPointButtons = [];
 let cameraTransition = null;
 let controlsEnabledBeforeTransition = true;
+
 const narrator = createNarratorAudio({
   buttons: [
     document.querySelector('#btn-narrator'),
@@ -107,6 +127,7 @@ const narrator = createNarratorAudio({
   progressBar: document.querySelector('#narrator-progress-bar'),
   progressContainer: document.querySelector('#narrator-progress-container')
 });
+
 const proximityAudio = createProximityAudio({
   templo: encodeURI('assets/audio/Templete Semisubterráneo.mp3'),
   kalasasaya: encodeURI('assets/audio/Kalasasaya.mp3'),
@@ -114,13 +135,16 @@ const proximityAudio = createProximityAudio({
   chachapuma: encodeURI('assets/audio/Chachapuma.mp3'),
   pumaPunku: encodeURI('assets/audio/Puma Punku.mp3'),
   puertaSol: encodeURI('assets/audio/Puerta del Sol.mp3'),
+  puertaLuna: encodeURI('assets/audio/puerta_luna.mp3'),
   bennett: encodeURI('assets/audio/Monolito Bennett.mp3'),
   kheriKala: encodeURI('assets/audio/Kheri Kala.mp3'),
   monolito: encodeURI('assets/audio/Monolito Ponce.mp3')
 }, narrator.isPlaying);
+
 const walkButton = document.querySelector('#btn-walk');
 walkButton.addEventListener('click', () => proximityAudio.unlock());
-const player = createJugador(camera, renderer, controls, walkButton, site, requestRender);
+const player = createJugador(camera, renderer, controls, walkButton, site, requestRender, scene);
+
 function updateNearbyPrompt() {
   if (!nearbyPrompt) return;
   if (nearbyKey && proximityAudio.isPlayingFor(nearbyKey)) {
@@ -131,13 +155,25 @@ function updateNearbyPrompt() {
     nearbyPrompt.textContent = '¿Quieres escuchar la explicación? Pulsa E.';
   }
 }
+
 narrator.audio.addEventListener('play', () => {
   proximityAudio.pause();
   updateNearbyPrompt();
+  document.querySelector('#btn-narrator')?.classList.add('active');
 });
+
+narrator.audio.addEventListener('pause', () => {
+  document.querySelector('#btn-narrator')?.classList.remove('active');
+});
+
+narrator.audio.addEventListener('ended', () => {
+  document.querySelector('#btn-narrator')?.classList.remove('active');
+});
+
 proximityAudio.audio.addEventListener('play', updateNearbyPrompt);
 proximityAudio.audio.addEventListener('pause', updateNearbyPrompt);
 proximityAudio.audio.addEventListener('ended', updateNearbyPrompt);
+
 addEventListener('keydown', (event) => {
   if (event.repeat || event.key.toLowerCase() !== 'e' || !player.walking || !nearbyKey) return;
   event.preventDefault();
@@ -148,9 +184,37 @@ addEventListener('keydown', (event) => {
   if (narrator.isPlaying()) narrator.pause();
   proximityAudio.playFor(nearbyKey);
 });
-document.querySelector('#guide-close').addEventListener('click', () => {
-  document.querySelector('#guide-dialogue').hidden = true;
-});
+
+// Control de cierre y reapertura de la guía de la narradora
+const guideCloseBtn = document.querySelector('#guide-close');
+const guideDialogueEl = document.querySelector('#guide-dialogue');
+if (guideCloseBtn && guideDialogueEl) {
+  const closeGuideHandler = (e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    guideDialogueEl.hidden = true;
+    guideDialogueEl.classList.add('is-hidden');
+    guideDialogueEl.style.display = 'none';
+  };
+  guideCloseBtn.addEventListener('click', closeGuideHandler);
+  guideCloseBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  guideCloseBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+  guideCloseBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+}
+
+// Al pulsar el botón de narradora en la barra superior, si la guía estaba oculta se vuelve a mostrar
+const topNarratorBtn = document.querySelector('#btn-narrator');
+if (topNarratorBtn && guideDialogueEl) {
+  topNarratorBtn.addEventListener('click', () => {
+    if (guideDialogueEl.hidden || guideDialogueEl.style.display === 'none' || guideDialogueEl.classList.contains('is-hidden')) {
+      guideDialogueEl.hidden = false;
+      guideDialogueEl.classList.remove('is-hidden');
+      guideDialogueEl.style.display = '';
+    }
+  });
+}
 
 // Localizador de objetos en la escena para aplicar el OutlinePass
 function findTargetModel(key) {
@@ -158,6 +222,7 @@ function findTargetModel(key) {
   const directNames = [
     `${key}-modelo-local`,
     key === 'puertaSol' ? 'puerta-del-sol' : null,
+    key === 'puertaLuna' ? 'puertaLuna-modelo-local' : null,
     key === 'monolito' ? 'monolito-ponce' : null,
     key === 'bennett' ? 'monolito-bennett' : null,
     key === 'kalasasaya' ? 'kalasasaya' : null,
@@ -226,11 +291,25 @@ function renderStoryPoints(key) {
 
 function updateInfoCard(key, point = null) {
   const data = info[key];
+  if (!data) return;
   document.querySelector('#info-title').textContent = point ? `${data.nombre} · ${point.titulo}` : data.nombre;
   document.querySelector('#info-period').textContent = data.periodo;
   document.querySelector('#info-description').textContent = point?.relato || data.descripcion;
   document.querySelector('#info-function').textContent = data.funcion;
   document.querySelector('#info-curiosity').textContent = data.datoCurioso;
+
+  const mediaContainer = document.querySelector('#info-media-container');
+  const mediaImg = document.querySelector('#info-image');
+  if (mediaContainer && mediaImg) {
+    if (data.imagen) {
+      mediaImg.src = data.imagen;
+      mediaImg.alt = data.nombre;
+      mediaContainer.hidden = false;
+    } else {
+      mediaContainer.hidden = true;
+      mediaImg.removeAttribute('src');
+    }
+  }
 }
 
 function syncOrbitControlsToCamera() {
@@ -239,7 +318,6 @@ function syncOrbitControlsToCamera() {
   const dampingEnabled = controls.enableDamping;
   const autoRotateEnabled = controls.autoRotate;
 
-  // Descarta el giro residual del ratón y recalcula la órbita desde el encuadre actual.
   controls.enableDamping = false;
   controls.autoRotate = false;
   controls.update();
@@ -254,6 +332,13 @@ function syncOrbitControlsToCamera() {
 function moveCameraTo(target, destination, duration = 1.25) {
   if (!cameraTransition) controlsEnabledBeforeTransition = controls.enabled;
   controls.minDistance = 2.5;
+
+  // Garantizar que la posición de destino nunca quede enterrada en el terreno exterior
+  const isOutsidePatio = Math.abs(destination.x) > 14.5 || Math.abs(destination.z) > 14.5;
+  if (isOutsidePatio && destination.y < 1.8) {
+    destination.y = 1.8;
+  }
+
   if (controlsEnabledBeforeTransition) syncOrbitControlsToCamera();
   controls.enabled = false;
   cameraTransition = {
@@ -276,7 +361,16 @@ function updateCameraTransition(delta) {
     ? 4 * progress * progress * progress
     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
+  // Arco parabólico suave para sobrevolar el terreno y los muros sin tocar la tierra
+  const horizontalDist = Math.hypot(
+    transition.endPosition.x - transition.startPosition.x,
+    transition.endPosition.z - transition.startPosition.z
+  );
+  const arcHeight = Math.max(3.2, Math.min(horizontalDist * 0.16, 12.0));
+  const arc = Math.sin(progress * Math.PI) * arcHeight;
+
   camera.position.lerpVectors(transition.startPosition, transition.endPosition, eased);
+  camera.position.y += arc;
   controls.target.lerpVectors(transition.startTarget, transition.endTarget, eased);
   camera.lookAt(controls.target);
 
@@ -310,6 +404,8 @@ function focusStoryPoint(key, index) {
   const view = point.vista || { x: 0, y: 4, z: 8 };
   moveCameraTo(target, target.clone().add(new THREE.Vector3(view.x, view.y, view.z)));
   setModelOutline(key);
+  updateMinimapHotspotChips();
+  drawMinimap();
 }
 
 function updateStoryPointPositions() {
@@ -331,8 +427,9 @@ function showInfo(key, focus = false) {
   selectedStoryIndex = -1;
   updateInfoCard(key);
   renderStoryPoints(key);
-
   setModelOutline(key);
+  updateMinimapHotspotChips();
+  drawMinimap();
 
   if (focus) {
     const target = new THREE.Vector3(data.posicion.x, data.posicion.y, data.posicion.z);
@@ -356,12 +453,27 @@ document.querySelectorAll('[data-model-focus]').forEach((button) =>
 
 function openDetail() {
   const data = info[selected];
+  if (!data) return;
   const point = data.puntos?.[selectedStoryIndex];
   document.querySelector('#modal-title').textContent = point ? `${data.nombre} · ${point.titulo}` : data.nombre;
   document.querySelector('#modal-period').textContent = data.periodo;
   document.querySelector('#modal-description').textContent = point?.relato || data.descripcion;
   document.querySelector('#modal-function').textContent = data.funcion;
   document.querySelector('#modal-curiosity').textContent = data.datoCurioso;
+
+  const modalMedia = document.querySelector('#modal-media-container');
+  const modalImg = document.querySelector('#modal-image');
+  if (modalMedia && modalImg) {
+    if (data.imagen) {
+      modalImg.src = data.imagen;
+      modalImg.alt = data.nombre;
+      modalMedia.hidden = false;
+    } else {
+      modalMedia.hidden = true;
+      modalImg.removeAttribute('src');
+    }
+  }
+
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.querySelector('#modal-close').focus();
@@ -373,34 +485,227 @@ function closeDetail() {
 }
 
 const infoToggle = document.querySelector('#btn-toggle-info');
-infoToggle.addEventListener('click', () => {
-  const hidden = infoCard.classList.toggle('is-hidden');
-  nearby.classList.toggle('is-hidden', hidden);
-  infoToggle.textContent = hidden ? 'Mostrar info' : 'Ocultar info';
-  infoToggle.setAttribute('aria-expanded', String(!hidden));
-  infoToggle.setAttribute('aria-label', hidden ? 'Mostrar la ficha de información' : 'Ocultar la ficha de información');
-});
+const collapseInfoBtn = document.querySelector('#btn-collapse-info');
 
-const fullscreenButton = document.querySelector('#btn-fullscreen');
-function updateFullscreenButton() {
-  const active = Boolean(document.fullscreenElement);
-  fullscreenButton.textContent = active ? '⛶ Salir de pantalla completa' : '⛶ Pantalla completa';
-  fullscreenButton.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Activar pantalla completa');
-  fullscreenButton.setAttribute('aria-pressed', String(active));
+function setInfoCardVisibility(hidden) {
+  infoCard.classList.toggle('is-hidden', hidden);
+  nearby.classList.toggle('is-hidden', hidden);
+  if (infoToggle) {
+    infoToggle.textContent = hidden ? 'Mostrar info' : 'Ocultar info';
+    infoToggle.setAttribute('aria-expanded', String(!hidden));
+    infoToggle.setAttribute('aria-label', hidden ? 'Mostrar la ficha de información' : 'Ocultar la ficha de información');
+  }
+  if (collapseInfoBtn) {
+    collapseInfoBtn.textContent = hidden ? '›' : '‹';
+    collapseInfoBtn.setAttribute('aria-label', hidden ? 'Expandir panel de información' : 'Colapsar panel de información');
+    collapseInfoBtn.title = hidden ? 'Expandir panel' : 'Colapsar panel';
+  }
 }
 
-fullscreenButton.addEventListener('click', async () => {
+if (infoToggle) {
+  infoToggle.addEventListener('click', () => {
+    const isHidden = !infoCard.classList.contains('is-hidden');
+    setInfoCardVisibility(isHidden);
+  });
+}
+
+if (collapseInfoBtn) {
+  collapseInfoBtn.addEventListener('click', () => {
+    const isHidden = !infoCard.classList.contains('is-hidden');
+    setInfoCardVisibility(isHidden);
+  });
+}
+
+const fullscreenButton = document.querySelector('#btn-fullscreen');
+const panelFullscreenButton = document.querySelector('#btn-panel-fullscreen');
+
+function updateFullscreenButton() {
+  const active = Boolean(document.fullscreenElement);
+  if (fullscreenButton) {
+    if (fullscreenButton.classList.contains('icon-only')) {
+      fullscreenButton.textContent = '⛶';
+    } else {
+      fullscreenButton.textContent = active ? '⛶ Salir de pantalla completa' : '⛶ Pantalla completa';
+    }
+    fullscreenButton.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Activar pantalla completa');
+    fullscreenButton.setAttribute('title', active ? 'Salir de pantalla completa' : 'Pantalla completa');
+    fullscreenButton.setAttribute('aria-pressed', String(active));
+    fullscreenButton.classList.toggle('active', active);
+  }
+  if (panelFullscreenButton) {
+    panelFullscreenButton.textContent = active ? '⛶ SALIR DE PANTALLA COMPLETA' : '⛶ PANTALLA COMPLETA';
+  }
+}
+
+async function toggleFullscreen() {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
     else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
   } catch (error) {
-    console.warn('No se pudo cambiar a pantalla completa:', error);
+    console.warn('No se pudo alternar pantalla completa:', error);
   }
-});
+}
+
+if (fullscreenButton) fullscreenButton.addEventListener('click', toggleFullscreen);
+if (panelFullscreenButton) panelFullscreenButton.addEventListener('click', toggleFullscreen);
 document.addEventListener('fullscreenchange', () => {
   updateFullscreenButton();
   requestRender();
 });
+
+// ==========================================================================
+// PANEL FLOTANTE DE AUDIO, VOLUMEN E ILUMINACIÓN (ESTILO POTOSÍ / TIWANAKU)
+// ==========================================================================
+const audioSettingsCard = document.querySelector('#audio-settings-card');
+const btnAudioSettingsToggle = document.querySelector('#btn-audio-settings');
+const btnCloseAudioPanel = document.querySelector('#btn-close-audio-panel');
+const volumeSlider = document.querySelector('#volume-slider');
+const btnAudioPlay = document.querySelector('#btn-audio-play');
+const btnAudioPause = document.querySelector('#btn-audio-pause');
+const btnAudioMute = document.querySelector('#btn-audio-mute');
+const audioStatusText = document.querySelector('#audio-status-text');
+const lightingSlider = document.querySelector('#lighting-slider');
+const lightingValue = document.querySelector('#lighting-value');
+
+let isAudioMuted = false;
+let currentVolumeVal = 0.85;
+
+const ambientWind = new Audio('assets/audio/sonido_de_viento_ambiente.mp3');
+ambientWind.loop = true;
+ambientWind.preload = 'auto';
+
+let windStarted = false;
+function tryStartAmbientWind() {
+  if (windStarted || isAudioMuted) return;
+  ambientWind.play().then(() => {
+    windStarted = true;
+    updateAudioCardStatus();
+  }).catch(() => {});
+}
+['pointerdown', 'keydown', 'click', 'touchstart'].forEach((evt) => {
+  window.addEventListener(evt, tryStartAmbientWind, { passive: true });
+});
+
+const savedVolVal = localStorage.getItem('tiwanaku_audio_vol');
+if (savedVolVal !== null) {
+  currentVolumeVal = parseFloat(savedVolVal) / 100;
+}
+
+function applyAppVolume(vol) {
+  currentVolumeVal = THREE.MathUtils.clamp(vol, 0, 1);
+  const effectiveVol = isAudioMuted ? 0 : currentVolumeVal;
+  narrator.audio.volume = effectiveVol;
+  proximityAudio.audio.volume = effectiveVol;
+  ambientWind.volume = effectiveVol * 0.55;
+  ambientWind.muted = isAudioMuted;
+
+  if (volumeSlider) {
+    const pct = Math.round(currentVolumeVal * 100);
+    volumeSlider.value = pct;
+    volumeSlider.style.setProperty('--range-pct', `${pct}%`);
+  }
+  localStorage.setItem('tiwanaku_audio_vol', String(Math.round(currentVolumeVal * 100)));
+  updateAudioCardStatus();
+}
+
+function updateAudioCardStatus() {
+  const isPlaying = !narrator.audio.paused || !proximityAudio.audio.paused || !ambientWind.paused;
+  if (audioStatusText) {
+    if (isAudioMuted) {
+      audioStatusText.textContent = `Silenciado (0%) · ${isPlaying ? 'En reproducción' : 'Pausado'}`;
+    } else {
+      audioStatusText.textContent = `${isPlaying ? 'En reproducción' : 'Música en pausa'} · Vol. ${Math.round(currentVolumeVal * 100)}%`;
+    }
+  }
+  if (btnAudioMute) {
+    btnAudioMute.textContent = isAudioMuted ? '🔇' : '🔊';
+  }
+  if (btnAudioPlay) btnAudioPlay.classList.toggle('active', isPlaying);
+  if (btnAudioPause) btnAudioPause.classList.toggle('active', !isPlaying);
+}
+
+if (btnAudioSettingsToggle && audioSettingsCard) {
+  btnAudioSettingsToggle.addEventListener('click', () => {
+    audioSettingsCard.classList.toggle('is-hidden');
+    updateAudioCardStatus();
+  });
+}
+if (btnCloseAudioPanel && audioSettingsCard) {
+  btnCloseAudioPanel.addEventListener('click', () => {
+    audioSettingsCard.classList.add('is-hidden');
+  });
+}
+
+if (volumeSlider) {
+  applyAppVolume(currentVolumeVal);
+  volumeSlider.addEventListener('input', (e) => {
+    isAudioMuted = false;
+    applyAppVolume(parseFloat(e.target.value) / 100);
+  });
+}
+
+if (btnAudioPlay) {
+  btnAudioPlay.addEventListener('click', () => {
+    isAudioMuted = false;
+    applyAppVolume(currentVolumeVal || 0.85);
+    ambientWind.play().catch(() => {});
+    if (nearbyKey && player.walking) {
+      proximityAudio.playFor(nearbyKey);
+    } else {
+      narrator.play();
+    }
+    updateAudioCardStatus();
+  });
+}
+
+if (btnAudioPause) {
+  btnAudioPause.addEventListener('click', () => {
+    ambientWind.pause();
+    narrator.pause();
+    proximityAudio.pause();
+    updateAudioCardStatus();
+  });
+}
+
+if (btnAudioMute) {
+  btnAudioMute.addEventListener('click', () => {
+    isAudioMuted = !isAudioMuted;
+    applyAppVolume(currentVolumeVal);
+  });
+}
+
+narrator.audio.addEventListener('play', updateAudioCardStatus);
+narrator.audio.addEventListener('pause', updateAudioCardStatus);
+proximityAudio.audio.addEventListener('play', updateAudioCardStatus);
+proximityAudio.audio.addEventListener('pause', updateAudioCardStatus);
+ambientWind.addEventListener('play', updateAudioCardStatus);
+ambientWind.addEventListener('pause', updateAudioCardStatus);
+
+// Regulación de iluminación general (exposición ACES Filmic)
+const baseToneExposure = 1.15;
+const savedLightPct = localStorage.getItem('tiwanaku_light_pct');
+let currentLightPct = savedLightPct !== null ? parseInt(savedLightPct, 10) : 100;
+
+function applyAppLighting(pct) {
+  currentLightPct = THREE.MathUtils.clamp(pct, 30, 220);
+  if (lightingSlider) {
+    lightingSlider.value = currentLightPct;
+    lightingSlider.style.setProperty('--range-pct', `${((currentLightPct - 30) / (220 - 30)) * 100}%`);
+  }
+  if (lightingValue) {
+    lightingValue.textContent = `${currentLightPct}%`;
+  }
+  renderer.toneMappingExposure = (currentLightPct / 100) * baseToneExposure;
+  localStorage.setItem('tiwanaku_light_pct', String(currentLightPct));
+  requestRender();
+}
+
+if (lightingSlider) {
+  applyAppLighting(currentLightPct);
+  lightingSlider.addEventListener('input', (e) => {
+    applyAppLighting(parseInt(e.target.value, 10));
+  });
+}
 
 document.querySelector('#btn-detail').addEventListener('click', openDetail);
 document.querySelector('#modal-close').addEventListener('click', closeDetail);
@@ -465,16 +770,47 @@ renderer.domElement.addEventListener('pointerup', (event) => {
 });
 
 const timeButton = document.querySelector('#btn-time');
-const timeLabels = ['☀ Día', '🌅 Ocaso', '🌙 Noche'];
-function cycleTime() {
-  const mode = environment.setTime(environment.mode + 1);
-  timeButton.textContent = timeLabels[mode];
+const envModeMap = { sunset: 0, day: 1, night: 2 };
+
+function applyAtmosphereMode(modeKey) {
+  const label = cinematic.applyAtmosphere(modeKey);
+  environment.setTime(envModeMap[modeKey] ?? 0);
+  if (timeButton) {
+    timeButton.textContent = label;
+    timeButton.classList.add('active');
+  }
+  requestRender();
+  return label;
 }
-timeButton.addEventListener('click', cycleTime);
+
+function cycleAtmosphereMode() {
+  const nextLabel = cinematic.cycleAtmosphere();
+  environment.setTime(envModeMap[cinematic.currentMode] ?? 0);
+  if (timeButton) {
+    timeButton.textContent = nextLabel;
+    timeButton.classList.add('active');
+  }
+  requestRender();
+}
+
+if (timeButton) {
+  timeButton.addEventListener('click', (e) => {
+    e.stopImmediatePropagation();
+    cycleAtmosphereMode();
+  });
+}
 addEventListener('keydown', (event) => {
-  if (event.key.toLowerCase() === 'n' && !event.repeat) cycleTime();
+  if (event.key.toLowerCase() === 'n' && !event.repeat) {
+    cycleAtmosphereMode();
+  }
 });
 
+// Sincroniza la atmósfera inicial cinematográfica (Ocaso)
+applyAtmosphereMode('sunset');
+
+// --------------------------------------------------------------------------
+// Minimapa en Rombo (45°) y Lista Rápida de Hotspots Clicables
+// --------------------------------------------------------------------------
 const mapCanvas = document.querySelector('#mini-map');
 const mapContext = mapCanvas.getContext('2d');
 const mapStructures = [
@@ -484,8 +820,10 @@ const mapStructures = [
   ['chachapuma', 28, -5, 4, 4],
   ['pumaPunku', 43, 31, 27, 19],
   ['puertaSol', 0, -24, 5, 3],
-  ['bennett', -42, -3, 2, 1],
-  ['kheriKala', 0, 43, 19, 12]
+  ['puertaLuna', 22, -24, 5, 3],
+  ['bennett', -42, -3, 3, 2],
+  ['kheriKala', 0, 43, 19, 12],
+  ['monolito', 0, 0, 2, 2]
 ];
 const proximityBounds = {
   templo: [0, 0, 14, 14],
@@ -494,57 +832,177 @@ const proximityBounds = {
   chachapuma: [28, -5, 2, 2],
   pumaPunku: [43, 31, 13.5, 9.5],
   puertaSol: [0, -24, 2.5, 1.5],
-  bennett: [-42, -3, 1, 0.5],
+  puertaLuna: [22, -24, 2.5, 1.5],
+  bennett: [-42, -3, 1.5, 1.0],
   kheriKala: [0, 43, 9.5, 6],
-  monolito: [0, 0, 1, 1]
+  monolito: [0, 0, 1.2, 1.2]
 };
 
+const quickHotspotItems = [
+  { key: 'templo', label: 'Templete' },
+  { key: 'kalasasaya', label: 'Kalasasaya' },
+  { key: 'puertaSol', label: 'Puerta Sol' },
+  { key: 'puertaLuna', label: 'Puerta Luna' },
+  { key: 'akapana', label: 'Akapana' },
+  { key: 'chachapuma', label: 'Chachapuma' },
+  { key: 'pumaPunku', label: 'Puma Punku' },
+  { key: 'monolito', label: 'Ponce' },
+  { key: 'bennett', label: 'Bennett' },
+  { key: 'kheriKala', label: 'Kheri Kala' }
+];
+
+const hotspotContainer = document.querySelector('#minimap-hotspots');
+const hotspotChips = [];
+
+function initMinimapHotspots() {
+  if (!hotspotContainer) return;
+  hotspotContainer.replaceChildren();
+  quickHotspotItems.forEach(({ key, label }) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `hotspot-chip ${key === selected ? 'active' : ''}`;
+    chip.textContent = label;
+    chip.setAttribute('aria-label', `Observar ${label}`);
+    chip.addEventListener('click', () => {
+      visited.add(key);
+      showInfo(key, true);
+      updateMinimapHotspotChips();
+    });
+    hotspotContainer.appendChild(chip);
+    hotspotChips.push({ key, chip });
+  });
+}
+
+function updateMinimapHotspotChips() {
+  hotspotChips.forEach(({ key, chip }) => {
+    chip.classList.toggle('active', key === selected);
+  });
+}
+
 function drawMinimap() {
-  const ctx = mapContext,
-    w = mapCanvas.width,
-    h = mapCanvas.height;
+  const ctx = mapContext;
+  const w = mapCanvas.width;
+  const h = mapCanvas.height;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = 'rgba(38,43,38,.72)';
+
+  // Fondo oscuro con efecto translúcido
+  ctx.fillStyle = 'rgba(16, 14, 11, 0.78)';
   ctx.fillRect(0, 0, w, h);
-  const mx = (x) => 16 + ((x + 80) / 160) * (w - 32),
-    mz = (z) => 16 + ((z + 65) / 130) * (h - 32);
-  ctx.strokeStyle = 'rgba(234,208,153,.55)';
-  ctx.lineWidth = 1.4;
+
+  ctx.save();
+  // Rota el plano interno 45° para coincidir con la orientación diagonal de la vista 3D
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(-Math.PI / 4);
+  ctx.scale(0.82, 0.82);
+
+  const scaleX = (w - 32) / 160;
+  const scaleZ = (h - 32) / 130;
+  const mx = (x) => x * scaleX;
+  const mz = (z) => z * scaleZ;
+
+  // Muros perimetrales en rombo estilizados en dorado translúcido
+  ctx.strokeStyle = 'rgba(229, 193, 88, 0.48)';
+  ctx.lineWidth = 1.5;
   ctx.strokeRect(mx(-71), mz(-55), mx(71) - mx(-71), mz(55) - mz(-55));
+  ctx.strokeStyle = 'rgba(229, 193, 88, 0.22)';
   ctx.strokeRect(mx(-68), mz(-52), mx(68) - mx(-68), mz(52) - mz(-52));
+
+  // Estructuras del sitio
   mapStructures.forEach(([key, x, z, ww, dd]) => {
-    const px = mx(x),
-      py = mz(z),
-      pw = Math.max((ww / 160) * (w - 32), 3),
-      ph = Math.max((dd / 130) * (h - 32), 3);
-    ctx.fillStyle = visited.has(key) ? '#efd08d' : 'rgba(211,207,190,.78)';
-    ctx.fillRect(px - pw / 2, py - ph / 2, pw, ph);
-    if (visited.has(key)) {
+    const px = mx(x);
+    const py = mz(z);
+    const pw = Math.max(ww * scaleX, 4);
+    const ph = Math.max(dd * scaleZ, 4);
+
+    const isSelected = key === selected;
+    const isVisited = visited.has(key);
+
+    if (isSelected) {
+      // Monumento activo: resalta en dorado brillante con resplandor
+      ctx.fillStyle = '#ffd54f';
+      ctx.shadowColor = '#ffd54f';
+      ctx.shadowBlur = 9;
+      ctx.fillRect(px - pw / 2, py - ph / 2, pw, ph);
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#fff8e0';
+      ctx.lineWidth = 1.4;
+      ctx.strokeRect(px - pw / 2, py - ph / 2, pw, ph);
+    } else if (isVisited) {
+      ctx.fillStyle = 'rgba(229, 193, 88, 0.45)';
+      ctx.fillRect(px - pw / 2, py - ph / 2, pw, ph);
+      ctx.strokeStyle = 'rgba(229, 193, 88, 0.75)';
+      ctx.lineWidth = 1.0;
+      ctx.strokeRect(px - pw / 2, py - ph / 2, pw, ph);
+    } else {
+      ctx.fillStyle = 'rgba(180, 172, 155, 0.32)';
+      ctx.fillRect(px - pw / 2, py - ph / 2, pw, ph);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(px - pw / 2, py - ph / 2, pw, ph);
+    }
+
+    if (isVisited) {
       ctx.fillStyle = '#fff4d5';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('✔', px + pw / 2, py - ph / 2);
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText('✔', px + pw / 2 - 2, py - ph / 2 + 9);
     }
   });
+
+  // Indicador del jugador a pie
   if (player.walking) {
-    const px = mx(player.position.x),
-      py = mz(player.position.z);
+    const px = mx(player.position.x);
+    const py = mz(player.position.z);
     ctx.beginPath();
-    ctx.fillStyle = '#68d8f0';
-    ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#5de4ff';
+    ctx.arc(px, py, 4.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#eafcff';
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
-  ctx.fillStyle = '#fff4d5';
-  ctx.font = 'bold 10px sans-serif';
-  ctx.fillText('N', w / 2 - 3, 11);
+
+  // Indicador de dirección de la cámara sincronizado con la rotación
+  const camAngle = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+  ctx.save();
+  ctx.translate(mx(controls.target.x), mz(controls.target.z));
+  ctx.rotate(camAngle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-5, 9);
+  ctx.lineTo(0, 6.5);
+  ctx.lineTo(5, 9);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255, 220, 120, 0.75)';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+
+  // Indicador de orientación norte (rotado a 45°)
+  ctx.save();
+  ctx.translate(w - 20, 20);
+  ctx.rotate(-Math.PI / 4);
+  ctx.fillStyle = '#ffd54f';
+  ctx.font = 'bold 10px Outfit, sans-serif';
+  ctx.fillText('N', -4, -6);
+  ctx.beginPath();
+  ctx.moveTo(0, -5);
+  ctx.lineTo(3, 4);
+  ctx.lineTo(0, 1);
+  ctx.lineTo(-3, 4);
+  ctx.closePath();
+  ctx.fillStyle = '#ffd54f';
+  ctx.fill();
+  ctx.restore();
 }
 
 let wasWalking = false;
 function updateNearby() {
   if (!player.walking) {
     if (wasWalking || nearbyKey !== null) proximityAudio.stop();
+    if (wasWalking) {
+      walkButton.classList.remove('active');
+    }
     wasWalking = false;
     nearby.hidden = true;
     nearbyKey = null;
@@ -553,6 +1011,7 @@ function updateNearby() {
   }
   if (!wasWalking) {
     wasWalking = true;
+    walkButton.classList.add('active');
     if (narrator.isPlaying()) narrator.pause();
   }
   let nearest = null,
@@ -591,32 +1050,33 @@ function updateNearby() {
 
 let minimapTimer = 0;
 function animate() {
-  animationFrame = null;
+  animationFrame = requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   const movingCamera = updateCameraTransition(delta);
-  if (!movingCamera && !player.walking) controls.update();
+  if (!movingCamera && !player.walking) {
+    controls.update();
+    // Clamp de seguridad: evitar que la cámara descienda por debajo de la cota de tierra fuera del patio
+    const outsidePatio = Math.abs(camera.position.x) > 14.5 || Math.abs(camera.position.z) > 14.5;
+    if (outsidePatio && camera.position.y < 1.6) {
+      camera.position.y = 1.6;
+    }
+  }
   const playerWasMoving = player.needsUpdate;
   player.update(delta);
   updateNearby();
-  const environmentAnimating = environment.update(clock.elapsedTime);
+  environment.update(clock.elapsedTime);
   updateStoryPointPositions();
   minimapTimer += delta;
   if (minimapTimer > 0.1 || (player.walking && !playerWasMoving)) {
     drawMinimap();
     minimapTimer = 0;
   }
-  if (composer) {
-    composer.render();
-  } else {
-    renderer.render(scene, camera);
-  }
-
-  // Continúa solo durante transiciones, movimiento a pie o animación visible del ichu.
-  if (movingCamera || player.needsUpdate || environmentAnimating) requestRender();
+  cinematic.render();
 }
 
+initMinimapHotspots();
 const urlFocus = new URLSearchParams(window.location.search).get('focus');
 const initialKey = urlFocus && info[urlFocus] ? urlFocus : 'templo';
 drawMinimap();
 showInfo(initialKey, initialKey !== 'templo');
-requestRender();
+animate();

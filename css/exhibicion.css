@@ -1,0 +1,898 @@
+/* ==========================================================================
+   SALA DE EXHIBICIÓN CINEMATOGRÁFICA 3D - TIWANAKU VIRTUAL
+   Estilo Glassmorphism Oscuro Arqueológico
+   ========================================================================== */
+
+:root {
+  --gold-primary: #e5c158;
+  --gold-glow: rgba(229, 193, 88, 0.55);
+  --gold-subtle: rgba(229, 193, 88, 0.25);
+  --glass-bg: rgba(16, 14, 12, 0.78);
+  --glass-dock: rgba(14, 12, 10, 0.85);
+  --glass-border: rgba(229, 193, 88, 0.32);
+  --text-light: #f7f3ec;
+  --text-muted: #b8afa0;
+  --dock-active-glow: 0 0 20px rgba(229, 193, 88, 0.45), inset 0 0 12px rgba(229, 193, 88, 0.25);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #0d0b09;
+  color: var(--text-light);
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Canvas Three.js */
+#exhibicion-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  outline: none;
+}
+
+#exhibicion-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Viñeta cinematográfica sobre el viewport */
+.viewport-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 50%, rgba(10, 8, 6, 0.6) 100%);
+  z-index: 1;
+}
+
+/* ==========================================================================
+   BARRA SUPERIOR: ATMÓSFERA Y NAVEGACIÓN
+   ========================================================================== */
+.top-bar {
+  position: fixed;
+  top: 22px;
+  left: 24px;
+  right: 24px;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.top-bar > * {
+  pointer-events: auto;
+}
+
+.brand-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text-light);
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  border: 1px solid var(--glass-border);
+  padding: 8px 16px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: all 0.25s ease;
+}
+
+.brand-nav:hover {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 16px var(--gold-glow);
+  transform: translateY(-1px);
+}
+
+.brand-icon {
+  font-size: 1.25rem;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  color: var(--gold-primary);
+  line-height: 1.1;
+}
+
+.brand-subtitle {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+/* Selector de Atmósfera tipo Píldora Centrada */
+.atmosphere-bar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  padding: 5px;
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.atmo-btn {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s ease;
+}
+
+.atmo-btn:hover {
+  color: var(--text-light);
+  background: rgba(229, 193, 88, 0.12);
+}
+
+.atmo-btn.active {
+  color: #110e0a;
+  background: linear-gradient(135deg, #f5d678 0%, #d8ac38 100%);
+  font-weight: 600;
+  box-shadow: 0 2px 14px rgba(229, 193, 88, 0.5);
+}
+
+/* Botón de Rotación Automática y Controles */
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill-action-btn {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-light);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 8px 15px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.pill-action-btn:hover {
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+  box-shadow: 0 0 14px var(--gold-subtle);
+  transform: translateY(-1px);
+}
+
+.pill-action-btn.active {
+  background: rgba(229, 193, 88, 0.28);
+  border-color: var(--gold-primary);
+  color: #ffffff;
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+
+/* ==========================================================================
+   PANEL FLOTANTE IZQUIERDO: FICHA ARQUEOLÓGICA Y FOTOGRAFÍA REAL
+   ========================================================================== */
+.monument-panel {
+  position: fixed;
+  top: 92px;
+  left: 24px;
+  width: 330px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 240px);
+  z-index: 25;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.panel-header {
+  border-bottom: 1px solid rgba(229, 193, 88, 0.2);
+  padding-bottom: 10px;
+}
+
+.panel-eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+  color: var(--gold-primary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.panel-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: var(--text-light);
+  margin-bottom: 4px;
+}
+
+.panel-period {
+  font-size: 0.8rem;
+  color: var(--gold-primary);
+  font-weight: 500;
+}
+
+/* Tarjeta de Fotografía Real Arqueológica */
+.panel-image-wrap {
+  width: 100%;
+  height: 160px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.4);
+  cursor: zoom-in;
+}
+
+.panel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.panel-image-wrap:hover .panel-image {
+  transform: scale(1.05);
+}
+
+.image-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(14, 12, 10, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(229, 193, 88, 0.35);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  color: var(--gold-primary);
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+/* Botón de Audio Guía con atajo [E] */
+.audio-guide-btn {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(229, 193, 88, 0.22) 0%, rgba(163, 126, 36, 0.15) 100%);
+  border: 1px solid var(--gold-primary);
+  color: #fff6db;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.audio-guide-btn:hover {
+  background: linear-gradient(135deg, rgba(229, 193, 88, 0.38) 0%, rgba(163, 126, 36, 0.28) 100%);
+  box-shadow: 0 0 16px var(--gold-glow);
+  transform: translateY(-1px);
+}
+
+.audio-guide-btn.is-playing {
+  background: linear-gradient(135deg, #d8ac38 0%, #f5d678 100%);
+  color: #16120b;
+  font-weight: 700;
+  box-shadow: 0 0 20px var(--gold-glow);
+}
+
+.audio-key-tag {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(229, 193, 88, 0.45);
+  color: var(--gold-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.audio-guide-btn.is-playing .audio-key-tag {
+  background: #18130a;
+  color: #f7d570;
+  border-color: #2b1f09;
+}
+
+.audio-progress-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: -6px;
+}
+
+.audio-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold-primary), #fff2b8);
+  border-radius: 999px;
+  transition: width 0.15s linear;
+}
+
+.audio-guide-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audio-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(22, 18, 14, 0.45);
+  border: 1px solid rgba(229, 193, 88, 0.2);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.audio-vol-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gold-primary);
+  letter-spacing: 0.05em;
+}
+
+.mute-toggle-btn {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: var(--text-light);
+  transition: transform 0.15s;
+}
+
+.mute-toggle-btn:hover {
+  transform: scale(1.15);
+}
+
+.gold-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #e5c158 0%, #e5c158 var(--range-pct, 85%), rgba(255, 255, 255, 0.2) var(--range-pct, 85%), rgba(255, 255, 255, 0.2) 100%);
+  outline: none;
+  cursor: pointer;
+}
+
+.gold-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #5d6773;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.gold-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: #ffd257;
+}
+
+.gold-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #5d6773;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+}
+
+/* Descripción arqueológica */
+.panel-description {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.panel-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(229, 193, 88, 0.15);
+  padding-top: 10px;
+}
+
+.detail-item dt {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold-primary);
+  margin-bottom: 2px;
+}
+
+.detail-item dd {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   BARRA INFERIOR (DOCK DE MONUMENTOS)
+   ========================================================================== */
+.bottom-dock-wrap {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(1040px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.bottom-dock-wrap > * {
+  pointer-events: auto;
+}
+
+.dock-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.dock-scroll {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 8px 12px;
+  background: var(--glass-dock);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  scrollbar-width: none;
+}
+
+.dock-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tarjetas individuales de monumento en el dock */
+.monument-dock-btn {
+  flex: 0 0 auto;
+  min-width: 140px;
+  max-width: 175px;
+  background: rgba(26, 22, 18, 0.6);
+  border: 1px solid rgba(229, 193, 88, 0.2);
+  border-radius: 14px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-align: left;
+  outline: none;
+}
+
+.monument-dock-btn:hover {
+  background: rgba(45, 38, 30, 0.8);
+  border-color: var(--gold-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.monument-dock-btn.active {
+  background: linear-gradient(135deg, rgba(229, 193, 88, 0.32) 0%, rgba(163, 126, 36, 0.2) 100%);
+  border-color: var(--gold-primary);
+  box-shadow: var(--dock-active-glow);
+  transform: translateY(-3px);
+}
+
+.dock-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.dock-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dock-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monument-dock-btn.active .dock-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+.dock-subtitle {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monument-dock-btn.active .dock-subtitle {
+  color: var(--gold-primary);
+}
+
+/* Flechas de navegación del dock */
+.dock-nav-btn {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-light);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  z-index: 2;
+}
+
+.dock-nav-btn:hover {
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+  box-shadow: 0 0 12px var(--gold-glow);
+  transform: scale(1.08);
+}
+
+.dock-nav-btn.prev {
+  margin-right: -10px;
+}
+
+.dock-nav-btn.next {
+  margin-left: -10px;
+}
+
+/* Texto guía inferior */
+.dock-help-hint {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: rgba(247, 243, 236, 0.7);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* ==========================================================================
+   MODAL LIGHTBOX PARA AMPLIACIÓN DE FOTOGRAFÍA
+   ========================================================================== */
+.lightbox-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(8, 7, 5, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.lightbox-modal.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 900px;
+  max-height: 85vh;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+  background: #110e0c;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  display: block;
+}
+
+.lightbox-caption {
+  padding: 12px 18px;
+  background: rgba(14, 12, 10, 0.95);
+  font-size: 0.85rem;
+  color: var(--gold-primary);
+  font-weight: 500;
+  text-align: center;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  background: rgba(20, 16, 12, 0.8);
+  border: 1px solid var(--glass-border);
+  color: var(--text-light);
+  border-radius: 50%;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lightbox-close:hover {
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+  transform: scale(1.1);
+}
+
+/* ==========================================================================
+   PANTALLA DE CARGA SUAVE ENTRE MODELOS
+   ========================================================================== */
+.model-loading-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  background: rgba(16, 14, 12, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  padding: 16px 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  pointer-events: none;
+}
+
+.model-loading-indicator.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(229, 193, 88, 0.3);
+  border-top-color: var(--gold-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gold-primary);
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   CAPA DE PUNTOS DE HISTORIA Y ARQUEOLOGÍA 3D (STORY POINTS)
+   ========================================================================== */
+.story-points {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+  overflow: hidden;
+}
+
+.story-point {
+  pointer-events: auto;
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff2be, #d4a737 70%, #9e7417 100%);
+  border: 2px solid #fff8e0;
+  color: #1b160c;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 3px rgba(229, 193, 88, 0.4), 0 4px 14px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, opacity 0.2s ease;
+  user-select: none;
+  outline: none;
+}
+
+.story-point::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 220, 120, 0.75);
+  animation: story-pulse-ring 2.4s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+  pointer-events: none;
+}
+
+@keyframes story-pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.85; }
+  50% { transform: scale(1.38); opacity: 0; }
+  100% { transform: scale(1.38); opacity: 0; }
+}
+
+.story-point:hover,
+.story-point:focus-visible,
+.story-point.is-active {
+  transform: translate(-50%, -50%) scale(1.24);
+  z-index: 25;
+  box-shadow: 0 0 0 4px rgba(255, 230, 140, 0.75), 0 0 22px rgba(229, 193, 88, 0.95);
+  background: radial-gradient(circle at 35% 35%, #ffffff, #ffe066 65%, #c49420 100%);
+}
+
+.point-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(229, 193, 88, 0.16);
+  border: 1px solid rgba(229, 193, 88, 0.45);
+  color: var(--gold-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  animation: fadeInTag 0.3s ease;
+}
+
+.point-tag:hover {
+  background: rgba(229, 193, 88, 0.28);
+}
+
+@keyframes fadeInTag {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   RESPONSIVIDAD Y DISPOSITIVOS MÓVILES
+   ========================================================================== */
+@media (max-width: 860px) {
+  .top-bar {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .brand-nav {
+    padding: 6px 12px;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+
+  .atmo-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .monument-panel {
+    top: auto;
+    bottom: 120px;
+    left: 12px;
+    width: calc(100vw - 24px);
+    max-height: 38vh;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .panel-image-wrap {
+    height: 110px;
+  }
+
+  .bottom-dock-wrap {
+    bottom: 10px;
+    width: calc(100vw - 16px);
+  }
+
+  .monument-dock-btn {
+    min-width: 120px;
+    padding: 6px 10px;
+  }
+
+  .dock-help-hint {
+    font-size: 0.65rem;
+  }
+}

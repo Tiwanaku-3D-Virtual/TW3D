@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 
-// Distribución optimizada de 13 pilares megalíticos para máxima fluidez y fidelidad arquitectónica
+// Distribución optimizada de pilares megalíticos con accesos ceremoniales libres al Norte y Sur
 export const kalasasayaPillarPositions = [
-  // Muro posterior Norte
+  // Muro posterior Norte (vano de salida despejado en el centro)
   [-18, 0, -10.5],
   [-9, 0, -10.5],
-  [0, 0, -10.5],
+  [-4.5, 0, -10.5],
+  [4.5, 0, -10.5],
   [9, 0, -10.5],
   [18, 0, -10.5],
-  // Muro frontal Sur (vano de acceso despejado al centro)
+  // Muro frontal Sur (vano de acceso despejado en el centro)
   [-18, 0, 10.5],
   [-8, 0, 10.5],
   [8, 0, 10.5],
@@ -60,14 +61,15 @@ export function createKalasasaya() {
   base.receiveShadow = true;
   group.add(base);
 
-  // 2. Muros perimetrales de bloques de andesita labrada
+  // 2. Muros perimetrales de bloques de andesita labrada con vanos de acceso y salida al Norte, Sur, Este y Oeste
   const wallGeo = new THREE.BoxGeometry(1, .65, .8);
   const walls = new THREE.InstancedMesh(wallGeo, stoneMat, 132);
   const d = new THREE.Object3D();
   let n = 0;
   for (const z of [-12, 12]) {
     for (let x = -19; x <= 19; x += 1.25) {
-      if (Math.abs(x) < 3 && z === 12) continue;
+      // Vano ceremonial de 6.4m tanto en el Sur (ingreso) como en el Norte (salida recta)
+      if (Math.abs(x) < 3.2) continue;
       d.position.set(x, .65, z);
       d.scale.set(1.3, 1, 1);
       d.updateMatrix();
@@ -76,6 +78,8 @@ export function createKalasasaya() {
   }
   for (const x of [-19, 19]) {
     for (let z = -10; z <= 10; z += 1.25) {
+      // Vanos laterales en Este y Oeste para circulación fluida
+      if (Math.abs(z) < 2.5) continue;
       d.position.set(x, .65, z);
       d.scale.set(1, 1, 1.3);
       d.updateMatrix();
@@ -100,13 +104,33 @@ export function createKalasasaya() {
   upperAltar.castShadow = upperAltar.receiveShadow = true;
   group.add(upperAltar);
 
-  // 4. Escalinata monumental de acceso sur (conecta cota 0 con la plataforma)
+  // 4. Escalinatas monumentales de acceso y salida (conectan cota 0 con la plataforma de Kalasasaya)
   const stairSteps = 4;
   for (let i = 0; i < stairSteps; i++) {
-    const step = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.18, 0.7), altarMat);
-    step.position.set(0, 0.08 + i * 0.16, 12.8 - i * 0.65);
-    step.castShadow = step.receiveShadow = true;
-    group.add(step);
+    // Escalinata sur (ingreso principal desde el Templete)
+    const southStep = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.18, 0.75), altarMat);
+    southStep.position.set(0, 0.08 + i * 0.16, 12.8 - i * 0.65);
+    southStep.castShadow = southStep.receiveShadow = true;
+    group.add(southStep);
+
+    // Escalinata norte (salida directa al continuar caminando hacia adelante hacia la Puerta del Sol y la Luna)
+    const northStep = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.18, 0.75), altarMat);
+    northStep.position.set(0, 0.08 + i * 0.16, -12.8 + i * 0.65);
+    northStep.castShadow = northStep.receiveShadow = true;
+    group.add(northStep);
+  }
+
+  // Escalinatas laterales menores en Este y Oeste
+  for (let i = 0; i < 2; i++) {
+    const eastStep = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.22, 4.4), altarMat);
+    eastStep.position.set(19.8 - i * 0.7, 0.12 + i * 0.20, 0);
+    eastStep.castShadow = eastStep.receiveShadow = true;
+    group.add(eastStep);
+
+    const westStep = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.22, 4.4), altarMat);
+    westStep.position.set(-19.8 + i * 0.7, 0.12 + i * 0.20, 0);
+    westStep.castShadow = westStep.receiveShadow = true;
+    group.add(westStep);
   }
 
   return group;

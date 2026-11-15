@@ -1,84 +1,215 @@
 import * as THREE from 'three';
-import { loadLocalModel } from './modelos-3d.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// La ondulación comienza fuera del recinto para conservar una explanada estable.
-export function terrainHeight(x,z){
-  const edge=Math.max(Math.abs(x)-68,Math.abs(z)-52);
-  const t=THREE.MathUtils.clamp(edge/24,0,1);const fade=t*t*(3-2*t);
-  const waves=Math.sin(x*.045+z*.018)*.42+Math.cos(z*.052-x*.012)*.28+Math.sin((x+z)*.11)*.11;
-  return waves*fade;
+// Topografía del altiplano: ondulación suave hacia los cerros exteriores
+export function terrainHeight(x, z) {
+  const edge = Math.max(Math.abs(x) - 68, Math.abs(z) - 52);
+  const t = THREE.MathUtils.clamp(edge / 24, 0, 1);
+  const fade = t * t * (3 - 2 * t);
+  const waves =
+    Math.sin(x * 0.045 + z * 0.018) * 0.42 +
+    Math.cos(z * 0.052 - x * 0.012) * 0.28 +
+    Math.sin((x + z) * 0.11) * 0.11;
+  return waves * fade;
 }
 
-function createTerrainPatch({size,segments,holeSize=0,patioHole=false}){
-  const geometry=new THREE.PlaneGeometry(size,size,segments,segments);
-  const positions=geometry.attributes.position;
-  const uvs=geometry.attributes.uv;
-  const colors=new Float32Array(positions.count*3);
-  const normals=new Float32Array(positions.count*3);
-  const indices=[];
-  const rowSize=segments+1;
-  const color=new THREE.Color();
-  const sampleStep=.5;
-  const worldSize=2000;
-  const worldHalf=worldSize/2;
+// Referencia global al mesh del terreno para trazado vertical con Raycaster
+let globalGroundMesh = null;
+const terrainReadyCallbacks = [];
 
-  for(let i=0;i<positions.count;i++){
-    const x=positions.getX(i);
-    const z=-positions.getY(i);
-    const height=terrainHeight(x,z);
-    positions.setZ(i,height);
-
-    // Mantiene la misma escala de textura entre el terreno cercano y el lejano.
-    uvs.setXY(i,(x+worldHalf)/worldSize,(worldHalf-z)/worldSize);
-
-    const variation=(Math.sin(x*.09)*Math.cos(z*.07)+1)*.035+height*.025;
-    color.setRGB(.9+variation*.55,.82+variation*.5,.68+variation*.4);
-    colors[i*3]=color.r;colors[i*3+1]=color.g;colors[i*3+2]=color.b;
-
-    // Normales compartidas entre niveles para evitar una costura de iluminación.
-    const slopeX=(terrainHeight(x+sampleStep,z)-terrainHeight(x-sampleStep,z))/(sampleStep*2);
-    const slopeZ=(terrainHeight(x,z+sampleStep)-terrainHeight(x,z-sampleStep))/(sampleStep*2);
-    const normalLength=Math.sqrt(slopeX*slopeX+slopeZ*slopeZ+1);
-    normals[i*3]=-slopeX/normalLength;
-    normals[i*3+1]=slopeZ/normalLength;
-    normals[i*3+2]=1/normalLength;
+export function onTerrainReady(callback) {
+  if (globalGroundMesh) {
+    callback(globalGroundMesh);
+  } else {
+    terrainReadyCallbacks.push(callback);
   }
-
-  for(let row=0;row<segments;row++)for(let col=0;col<segments;col++){
-    const a=row*rowSize+col,b=(row+1)*rowSize+col,c=b+1,d=a+1;
-    const centerX=(positions.getX(a)+positions.getX(c))*.5;
-    const centerZ=-(positions.getY(a)+positions.getY(c))*.5;
-    if(holeSize&&Math.abs(centerX)<holeSize&&Math.abs(centerZ)<holeSize)continue;
-    if(patioHole&&Math.abs(centerX)<14.1&&Math.abs(centerZ)<14.1)continue;
-    indices.push(a,b,d,b,c,d);
-  }
-
-  geometry.setIndex(indices);
-  geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  geometry.setAttribute('normal',new THREE.BufferAttribute(normals,3));
-  geometry.computeBoundingSphere();
-  return geometry;
 }
 
-export function createTerrain(){
-  const texture=new THREE.TextureLoader().load('assets/textures/GroundDirtRocky020_COL_2K.jpg');
-  texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(152,152);
-  const material=new THREE.MeshStandardMaterial({map:texture,color:'#ffffff',vertexColors:true,roughness:1});
-  const ground=new THREE.Group();
-  ground.name='terreno-altiplanico';
+/**
+ * Terreno auténtico desde assets/models/suelo.glb con recorte del patio hundido,
+ * normalMap 2K con tiling aumentado (40, 40) para textura en los cerros y shader procedural
+ * de senderos sutiles sin tonos blancos ni grises.
+ */
+export function createTerrain() {
+  const ground = new THREE.Group();
+  ground.name = 'terreno-altiplanico';
 
-  const farGround=new THREE.Mesh(createTerrainPatch({size:2000,segments:160,holeSize:150}),material);
-  farGround.rotation.x=-Math.PI/2;farGround.position.y=-.18;farGround.receiveShadow=true;farGround.name='terreno-lejano';
-  const nearGround=new THREE.Mesh(createTerrainPatch({size:300,segments:60,patioHole:true}),material);
-  nearGround.rotation.x=-Math.PI/2;nearGround.position.y=-.18;nearGround.receiveShadow=true;nearGround.name='terreno-cercano';
-  ground.add(farGround,nearGround);
+  const textureLoader = new THREE.TextureLoader();
+
+  // Textura difusa de suelo altiplánico con tiling (40, 40)
+  const groundTexture = textureLoader.load('assets/textures/GroundDirtRocky020_COL_2K.jpg');
+  groundTexture.colorSpace = THREE.SRGBColorSpace;
+  groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+  groundTexture.repeat.set(40, 40);
+
+  // Mapa de normales para relieve granulado en cerros y colinas lejanas
+  const groundNormal = textureLoader.load('assets/textures/GroundDirtWeedsPatchy004/GroundDirtWeedsPatchy004_NRM_2K.jpg');
+  groundNormal.wrapS = groundNormal.wrapT = THREE.RepeatWrapping;
+  groundNormal.repeat.set(40, 40);
+
+  const material = new THREE.MeshStandardMaterial({
+    map: groundTexture,
+    normalMap: groundNormal,
+    normalScale: new THREE.Vector2(1.6, 1.6),
+    color: 0x8a7052,
+    roughness: 0.94,
+    metalness: 0.01
+  });
+
+  // Shader procedural: caminos sutiles de tierra compacta cálida (vec3(0.32, 0.24, 0.16)) sobre tierra base (vec3(0.23, 0.17, 0.11))
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      `#include <common>
+       varying vec3 vWorldPosition;`
+    );
+
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <worldpos_vertex>',
+      `#include <worldpos_vertex>
+       vWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      `#include <common>
+       varying vec3 vWorldPosition;
+
+       float lineDist(vec2 p, vec2 a, vec2 b) {
+         vec2 pa = p - a, ba = b - a;
+         float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+         return length(pa - ba * h);
+       }`
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      `#ifdef USE_MAP
+         // Muestreo con ligero anti-tiling por mezcla UV
+         vec2 uvA = vMapUv;
+         vec2 uvB = vMapUv * 1.37 + vec2(0.31, 0.47);
+         float nNoise = sin(vWorldPosition.x * 0.08) * cos(vWorldPosition.z * 0.08) * 0.5 + 0.5;
+         vec4 texA = texture2D(map, uvA);
+         vec4 texB = texture2D(map, uvB);
+         vec4 blendedMap = mix(texA, texB, nNoise * 0.45 + 0.25);
+
+         // Tierra base árida altiplánica profunda: tonos orgánicos oscuros y cálidos
+         vec3 baseTone = vec3(0.23, 0.17, 0.11);
+         float macroVar = sin(vWorldPosition.x * 0.022 + 1.2) * cos(vWorldPosition.z * 0.022) * 0.5 + 0.5;
+         vec3 baseSoil = blendedMap.rgb * mix(baseTone, baseTone * 1.25, macroVar);
+
+         // Senderos sutiles hacia accesos: tierra compacta cálida (vec3(0.32, 0.24, 0.16)) SIN BLANCO
+         vec2 p = vWorldPosition.xz;
+         float dPath = 999.0;
+         dPath = min(dPath, lineDist(p, vec2(0.0, 13.5), vec2(0.0, 58.0)));     // Sur Templete
+         dPath = min(dPath, lineDist(p, vec2(0.0, 0.0), vec2(-42.0, -3.0)));    // Templete a Kalasasaya
+         dPath = min(dPath, lineDist(p, vec2(-42.0, -3.0), vec2(0.0, -24.0)));  // Kalasasaya a Puerta del Sol
+         dPath = min(dPath, lineDist(p, vec2(0.0, 14.0), vec2(-45.0, 34.0)));   // A Pirámide Akapana
+         dPath = min(dPath, lineDist(p, vec2(0.0, 14.0), vec2(43.0, 31.0)));    // A Puma Punku
+         dPath = min(dPath, lineDist(p, vec2(0.0, 14.0), vec2(0.0, 43.0)));     // A Kheri Kala
+         dPath = min(dPath, lineDist(p, vec2(-22.0, -3.0), vec2(28.0, -5.0)));  // Kalasasaya a Chachapuma
+
+         // Bordes ruidosos naturales para evitar líneas rectas artificiales
+         float edgeNoise = sin(vWorldPosition.x * 0.45) * cos(vWorldPosition.z * 0.45) * 0.35;
+         float pathFactor = 1.0 - smoothstep(0.8 + edgeNoise, 2.6 + edgeNoise, dPath);
+         pathFactor = clamp(pathFactor, 0.0, 1.0);
+
+         vec3 pathSoil = blendedMap.rgb * vec3(0.32, 0.24, 0.16);
+         vec3 finalColor = mix(baseSoil, pathSoil, pathFactor * 0.65);
+
+         diffuseColor = vec4(finalColor, 1.0);
+       #endif`
+    );
+  };
+
+  const loader = new GLTFLoader();
+  loader.load(
+    'assets/models/suelo.glb',
+    (gltf) => {
+      let groundMesh = null;
+      gltf.scene.traverse((child) => {
+        if (child.isMesh && !groundMesh) {
+          groundMesh = child;
+        }
+      });
+
+      if (groundMesh) {
+        const geo = groundMesh.geometry;
+        const pos = geo.attributes.position;
+        const index = geo.index;
+
+        // Recorte geométrico del patio hundido del Templete Semisubterráneo y de la escalinata sur
+        if (index) {
+          const newIndices = [];
+          const isInsideTempleteHole = (x, z) => {
+            // Patio central hundido
+            if (Math.abs(x) < 14.4 && Math.abs(z) < 14.4) return true;
+            // Vano y peldaños de la escalinata sur que suben hacia el exterior
+            if (Math.abs(x) < 3.4 && z >= 11.0 && z <= 17.5) return true;
+            return false;
+          };
+
+          for (let i = 0; i < index.count; i += 3) {
+            const a = index.getX(i);
+            const b = index.getX(i + 1);
+            const c = index.getX(i + 2);
+            const ax = pos.getX(a), az = pos.getZ(a);
+            const bx = pos.getX(b), bz = pos.getZ(b);
+            const cx = pos.getX(c), cz = pos.getZ(c);
+
+            const midX = (ax + bx + cx) / 3.0;
+            const midZ = (az + bz + cz) / 3.0;
+
+            const inPatio =
+              isInsideTempleteHole(midX, midZ) ||
+              (isInsideTempleteHole(ax, az) && isInsideTempleteHole(bx, bz)) ||
+              (isInsideTempleteHole(ax, az) && isInsideTempleteHole(cx, cz)) ||
+              (isInsideTempleteHole(bx, bz) && isInsideTempleteHole(cx, cz));
+
+            if (!inPatio) {
+              newIndices.push(a, b, c);
+            }
+          }
+          geo.setIndex(newIndices);
+        }
+
+        groundMesh.material = material;
+        groundMesh.position.set(0, 0, 0);
+        groundMesh.receiveShadow = true;
+        groundMesh.name = 'malla-suelo-topografia';
+        ground.add(groundMesh);
+
+        globalGroundMesh = groundMesh;
+        terrainReadyCallbacks.forEach((cb) => cb(groundMesh));
+        terrainReadyCallbacks.length = 0;
+      }
+    },
+    undefined,
+    (err) => {
+      console.warn('Error al cargar suelo.glb, usando respaldo procedural:', err);
+      const fallback = createFallbackTerrainPatch(material);
+      ground.add(fallback);
+      globalGroundMesh = fallback;
+      terrainReadyCallbacks.forEach((cb) => cb(fallback));
+      terrainReadyCallbacks.length = 0;
+    }
+  );
+
   return ground;
 }
 
+function createFallbackTerrainPatch(mat) {
+  const geo = new THREE.PlaneGeometry(400, 400, 80, 80);
+  geo.rotateX(-Math.PI / 2);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
 const skyPaths = [
-  'assets/textures/cielos.webp',
-  'assets/textures/amanecer.webp',
-  'assets/textures/cold-night-equirect.webp'
+  'assets/textures/amanecer.webp',          // Modo 0: Ocaso / Atardecer
+  'assets/textures/cielos.webp',            // Modo 1: Día
+  'assets/textures/cold-night-equirect.webp' // Modo 2: Noche
 ];
 
 function loadEquirectTexture(path, maxDimension = 2048) {
@@ -107,8 +238,7 @@ function loadEquirectTexture(path, maxDimension = 2048) {
       texture.needsUpdate = true;
       resolve(texture);
     };
-    img.onerror = (err) => {
-      console.warn('Error al cargar textura de cielo:', path, err);
+    img.onerror = () => {
       const tex = new THREE.TextureLoader().load(path);
       tex.mapping = THREE.EquirectangularReflectionMapping;
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -151,72 +281,314 @@ function createStars(scene) {
   return stars;
 }
 
-function createIchu(scene){
-  const count=600;const geometry=new THREE.ConeGeometry(.10,1,5);
-  const material=new THREE.MeshStandardMaterial({color:'#78804b',roughness:.94});
-  material.onBeforeCompile=shader=>{
-    shader.uniforms.uWind={value:0};
-    shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nuniform float uWind;');
-    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef USE_INSTANCING\ntransformed.x += sin(uWind + instanceMatrix[3][0] * 0.027) * 0.065 * max(position.y + 0.5, 0.0);\n#endif');
-    material.userData.windShader=shader;
-  };
-  const blades=[0,1,2].map(()=>new THREE.InstancedMesh(geometry,material,count));
-  const d=new THREE.Object3D();const color=new THREE.Color();let seed=54421;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-  for(let i=0;i<count;i++){
-    let x=0,z=0;for(let tryN=0;tryN<20;tryN++){x=(rand()-.5)*285;z=(rand()-.5)*290;if(!(Math.abs(x)<71&&Math.abs(z)<57)&&z>-103)break;}
-    const y=terrainHeight(x,z)-.18;
-    for(let b=0;b<3;b++){
-      const height=.8+rand()*.78;d.position.set(x+(rand()-.5)*.34,y+height*.47,z+(rand()-.5)*.34);d.rotation.set((rand()-.5)*.18,rand()*Math.PI*2,(rand()-.5)*.14);d.scale.set(.62+rand()*.4,height,.62+rand()*.4);d.updateMatrix();blades[b].setMatrixAt(i,d.matrix);
-      color.setHSL(.17+rand()*.055,.28,.32+rand()*.12);blades[b].setColorAt(i,color);
-    }
-  }
-  blades.forEach(mesh=>{mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=false;mesh.receiveShadow=false;mesh.name='ichu-instanciado';scene.add(mesh);});
-  return {blades,material,active:true};
+/**
+ * Exclusiones: ninguna mata de paja brava dentro del complejo amurallado
+ * ni dentro de templos o plataformas.
+ */
+function isExcludedZone(x, z) {
+  // Radio mínimo de 30 unidades desde el centro
+  if (Math.hypot(x, z) < 30) return true;
+  // Templete Semisubterráneo
+  if (Math.abs(x) < 22 && Math.abs(z) < 22) return true;
+  // Kalasasaya
+  if (x > -72 && x < -16 && z > -24 && z < 18) return true;
+  // Pirámide de Akapana
+  if (x > -72 && x < -20 && z > 10 && z < 60) return true;
+  // Puma Punku
+  if (x > 24 && x < 64 && z > 10 && z < 52) return true;
+  // Puerta del Sol
+  if (x > -10 && x < 10 && z > -36 && z < -14) return true;
+  // Puerta de la Luna
+  if (x > 14 && x < 30 && z > -32 && z < -16) return true;
+  // Kheri Kala
+  if (x > -16 && x < 16 && z > 32 && z < 56) return true;
+  // Chachapuma
+  if (x > 22 && x < 34 && z > -11 && z < 1) return true;
+  // Senderos de acceso
+  if (Math.abs(x) < 4.0 && z >= 12 && z <= 60) return true;
+  // Eje de muros perimetrales
+  if ((Math.abs(x) > 42 && Math.abs(x) < 56) || (Math.abs(z) > 42 && Math.abs(z) < 56)) return true;
+  return false;
 }
 
-async function replaceIchuWithModel(scene, fallback){
-  try{
-    const model=await loadLocalModel('assets/models/ichu.glb',{fitSize:4,tint:'#779c48',tintMode:'replace'});
-    model.updateWorldMatrix(true,true);
-    const count=120,positions=[];let seed=87231;
-    const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-    for(let i=0;i<count;i++){
-      let x=0,z=0;
-      for(let attempt=0;attempt<24;attempt++){
-        x=(random()-.5)*220;z=(random()-.5)*180;
-        const inTemple=Math.abs(x)<17&&Math.abs(z)<17;
-        const inKalasasaya=x>-64&&x<-20&&z>-16&&z<11;
-        const inAkapana=x>-64&&x<-25&&z>14&&z<55;
-        const inPumaPunku=x>28&&x<59&&z>15&&z<47;
-        const inSunGate=x>-5&&x<5&&z>-30&&z<-18;
-        if(!inTemple&&!inKalasasaya&&!inAkapana&&!inPumaPunku&&!inSunGate&&z>-103)break;
+/**
+ * Distribución de Paja Brava (ichu.glb) utilizando la malla realista detallada (Master_Ichu_Geo, 1400 vértices),
+ * normalizada y apoyada con Raycaster sobre el relieve del terreno.
+ */
+async function createInstancedIchu(scene) {
+  const loader = new GLTFLoader();
+  const dummy = new THREE.Object3D();
+
+  let seed = 48291;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  try {
+    const ichuGltf = await loader.loadAsync('assets/models/ichu.glb');
+    let sourceMesh = null;
+    ichuGltf.scene.traverse((c) => {
+      // Buscar la malla de alta fidelidad con briznas reales (Master_Ichu_Geo / Master_Ichu_Geo.001)
+      // evitando expresamente el cono low-poly de 12 vértices (Master_Ichu)
+      if (c.isMesh && (c.name.includes('Geo') || c.geometry?.attributes?.position?.count > 100)) {
+        if (!sourceMesh) sourceMesh = c;
       }
-      positions.push([x,terrainHeight(x,z)-.18,z,random()*Math.PI*2,1.05+random()*.55]);
-    }
-    const detailMeshes=[];model.traverse((node)=>{if(node.isMesh)detailMeshes.push(node);});
-    detailMeshes.forEach((source,index)=>{
-      const geometry=source.geometry.clone().applyMatrix4(source.matrixWorld);
-      const mesh=new THREE.InstancedMesh(geometry,source.material,count);
-      mesh.name=`ichu-glb-instanciado-${index+1}`;
-      const dummy=new THREE.Object3D();
-      positions.forEach(([x,y,z,rotation,scale],instance)=>{
-        dummy.position.set(x,y,z);dummy.rotation.set(0,rotation,0);dummy.scale.setScalar(scale);dummy.updateMatrix();mesh.setMatrixAt(instance,dummy.matrix);
-      });
-      mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=false;mesh.receiveShadow=false;scene.add(mesh);
     });
-    fallback.blades.forEach((mesh)=>scene.remove(mesh));
-    fallback.blades[0]?.geometry.dispose();fallback.material.dispose();
-    fallback.active=false;
-  }catch(error){
-    console.warn('Se conserva el ichu generado si no se puede cargar el modelo local.',error);
+
+    if (!sourceMesh) return;
+
+    // Normalizar la escala para que cada mata tenga altura base 1.0 (se escalará a 0.75 - 1.25)
+    const ichuGeo = sourceMesh.geometry.clone();
+    ichuGeo.computeBoundingBox();
+    const box = ichuGeo.boundingBox;
+    const bHeight = box.max.y - box.min.y;
+    if (bHeight > 0.001) {
+      const scaleNorm = 1.0 / bHeight;
+      ichuGeo.scale(scaleNorm, scaleNorm, scaleNorm);
+    }
+    ichuGeo.computeBoundingBox();
+    const bCenter = new THREE.Vector3();
+    ichuGeo.boundingBox.getCenter(bCenter);
+    // Base firmemente asentada en y = 0
+    ichuGeo.translate(-bCenter.x, -ichuGeo.boundingBox.min.y, -bCenter.z);
+
+    // Material PBR doble cara para vegetación con respuesta natural a la luz
+    const ichuMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, // Modulado por instancia mediante setColorAt
+      roughness: 0.88,
+      metalness: 0.0,
+      side: THREE.DoubleSide
+    });
+
+    // Variaciones cromáticas auténticas de paja brava andina
+    const ichuTones = [
+      new THREE.Color(0xa48d52), // Paja dorada madura
+      new THREE.Color(0x957f46), // Tono ocre seco
+      new THREE.Color(0xb29a5a), // Paja expuesta al sol
+      new THREE.Color(0x8a773e), // Ocre oscuro
+      new THREE.Color(0x9d894b)  // Paja brava estándar
+    ];
+
+    const ichuCount = 420;
+    const ichuInstanced = new THREE.InstancedMesh(ichuGeo, ichuMat, ichuCount);
+    ichuInstanced.castShadow = true;
+    ichuInstanced.receiveShadow = true;
+    ichuInstanced.name = 'ichu-instanciado-glb';
+
+    // Generar racimos orgánicos fuera del complejo amurallado (radio > 30)
+    const clusterCenters = [];
+    let attempts = 0;
+    while (clusterCenters.length < 26 && attempts < 1500) {
+      attempts++;
+      const angle = rand() * Math.PI * 2;
+      const r = 32 + rand() * 125;
+      const cx = Math.cos(angle) * r;
+      const cz = Math.sin(angle) * r;
+      if (!isExcludedZone(cx, cz) && Math.hypot(cx, cz) > 30) {
+        clusterCenters.push({ x: cx, z: cz, spread: 4.5 + rand() * 7.5 });
+      }
+    }
+
+    const positions = [];
+    attempts = 0;
+    while (positions.length < ichuCount && attempts < 7000) {
+      attempts++;
+      const c = clusterCenters[Math.floor(rand() * clusterCenters.length)] || { x: 0, z: 70, spread: 8 };
+      const angle = rand() * Math.PI * 2;
+      const dist = rand() * c.spread;
+      const px = c.x + Math.cos(angle) * dist;
+      const pz = c.z + Math.sin(angle) * dist;
+      if (!isExcludedZone(px, pz) && Math.hypot(px, pz) > 30) {
+        positions.push({ x: px, z: pz });
+      }
+    }
+
+    // Raycaster vertical hacia abajo sobre el suelo
+    const raycaster = new THREE.Raycaster();
+    const rayDown = new THREE.Vector3(0, -1, 0);
+
+    function placeInstances(targetGround) {
+      positions.forEach((p, i) => {
+        let groundY = terrainHeight(p.x, p.z);
+        if (targetGround) {
+          raycaster.set(new THREE.Vector3(p.x, 60, p.z), rayDown);
+          raycaster.far = 120;
+          const hits = raycaster.intersectObject(targetGround, false);
+          if (hits.length > 0) {
+            groundY = hits[0].point.y;
+          }
+        }
+
+        // Apoyada exactamente sobre el relieve de la tierra
+        const finalY = groundY - 0.04;
+        dummy.position.set(p.x, finalY, p.z);
+        dummy.rotation.set(0, rand() * Math.PI * 2, 0);
+
+        // Altura visible y natural de 0.75 a 1.25 unidades
+        const s = 0.75 + rand() * 0.50;
+        dummy.scale.set(s * (0.85 + rand() * 0.3), s, s * (0.85 + rand() * 0.3));
+        dummy.updateMatrix();
+        ichuInstanced.setMatrixAt(i, dummy.matrix);
+
+        // Tonalidad natural por mata
+        const tone = ichuTones[Math.floor(rand() * ichuTones.length)];
+        ichuInstanced.setColorAt(i, tone);
+      });
+      ichuInstanced.instanceMatrix.needsUpdate = true;
+      if (ichuInstanced.instanceColor) ichuInstanced.instanceColor.needsUpdate = true;
+      scene.add(ichuInstanced);
+    }
+
+    onTerrainReady((mesh) => {
+      placeInstances(mesh);
+    });
+  } catch (err) {
+    console.warn('No se pudo instanciar ichu.glb:', err);
+  }
+}
+
+/**
+ * Relleno natural del campo exterior mediante rocas de piedra andesita (piedra_G.glb),
+ * normalizadas con base en el suelo y distribuidas con Raycaster para evitar que floten.
+ */
+async function createInstancedRocks(scene) {
+  const loader = new GLTFLoader();
+  const dummy = new THREE.Object3D();
+
+  let seed = 73918;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  try {
+    const rockGltf = await loader.loadAsync('assets/models/piedra_G.glb');
+    let rockMesh = null;
+    rockGltf.scene.traverse((c) => {
+      if (c.isMesh && !rockMesh) rockMesh = c;
+    });
+
+    if (!rockMesh) return;
+
+    // Normalizar la geometría: centrar X/Z, apoyar la base en y = 0 y normalizar tamaño unitario
+    const rockGeo = rockMesh.geometry.clone();
+    rockGeo.computeBoundingBox();
+    const box = rockGeo.boundingBox;
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    rockGeo.translate(-center.x, -box.min.y, -center.z);
+
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim > 0.001) {
+      const norm = 1.0 / maxDim;
+      rockGeo.scale(norm, norm, norm);
+    }
+
+    // Material de roca andesita / arenisca rugosa altiplánica
+    const rockMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.90,
+      metalness: 0.05
+    });
+
+    // Variaciones de color de roca andina
+    const rockTones = [
+      new THREE.Color(0x56473b), // Andesita grisácea oscura
+      new THREE.Color(0x624b3c), // Arenisca rojiza
+      new THREE.Color(0x4d3e33), // Roca volcánica oscura
+      new THREE.Color(0x5d4e41), // Tierra arcillosa
+      new THREE.Color(0x6a5647)  // Ocre arenisca
+    ];
+
+    const rockCount = 140;
+    const rockInstanced = new THREE.InstancedMesh(rockGeo, rockMat, rockCount);
+    rockInstanced.castShadow = true;
+    rockInstanced.receiveShadow = true;
+    rockInstanced.name = 'piedras-G-instanciadas';
+
+    // Puntos de racimo dispersos por el paisaje exterior
+    const clusterCenters = [];
+    let attempts = 0;
+    while (clusterCenters.length < 20 && attempts < 1200) {
+      attempts++;
+      const angle = rand() * Math.PI * 2;
+      const r = 34 + rand() * 130;
+      const cx = Math.cos(angle) * r;
+      const cz = Math.sin(angle) * r;
+      if (!isExcludedZone(cx, cz) && Math.hypot(cx, cz) > 30) {
+        clusterCenters.push({ x: cx, z: cz, spread: 6.0 + rand() * 12.0 });
+      }
+    }
+
+    const positions = [];
+    attempts = 0;
+    while (positions.length < rockCount && attempts < 6000) {
+      attempts++;
+      const c = clusterCenters[Math.floor(rand() * clusterCenters.length)] || { x: 0, z: 75, spread: 10 };
+      const angle = rand() * Math.PI * 2;
+      const dist = rand() * c.spread;
+      const px = c.x + Math.cos(angle) * dist;
+      const pz = c.z + Math.sin(angle) * dist;
+      if (!isExcludedZone(px, pz) && Math.hypot(px, pz) > 30) {
+        positions.push({ x: px, z: pz });
+      }
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const rayDown = new THREE.Vector3(0, -1, 0);
+
+    function placeRocks(targetGround) {
+      positions.forEach((p, i) => {
+        let groundY = terrainHeight(p.x, p.z);
+        if (targetGround) {
+          raycaster.set(new THREE.Vector3(p.x, 60, p.z), rayDown);
+          raycaster.far = 120;
+          const hits = raycaster.intersectObject(targetGround, false);
+          if (hits.length > 0) {
+            groundY = hits[0].point.y;
+          }
+        }
+
+        // Hundir ligeramente (10 a 14 cm) para que la roca asiente sólidamente en el terreno sin flotar
+        const finalY = groundY - 0.12;
+        dummy.position.set(p.x, finalY, p.z);
+        // Rotación Y orgánica con leve inclinación en X/Z según terreno
+        dummy.rotation.set((rand() - 0.5) * 0.12, rand() * Math.PI * 2, (rand() - 0.5) * 0.12);
+
+        // Tamaño de bloque de 0.9 a 2.3 metros, con ligero achatamiento vertical
+        const baseSize = 0.90 + rand() * 1.40;
+        const sy = baseSize * (0.68 + rand() * 0.28);
+        const sx = baseSize * (0.85 + rand() * 0.30);
+        const sz = baseSize * (0.85 + rand() * 0.30);
+        dummy.scale.set(sx, sy, sz);
+
+        dummy.updateMatrix();
+        rockInstanced.setMatrixAt(i, dummy.matrix);
+
+        const tone = rockTones[Math.floor(rand() * rockTones.length)];
+        rockInstanced.setColorAt(i, tone);
+      });
+      rockInstanced.instanceMatrix.needsUpdate = true;
+      if (rockInstanced.instanceColor) rockInstanced.instanceColor.needsUpdate = true;
+      scene.add(rockInstanced);
+    }
+
+    onTerrainReady((mesh) => {
+      placeRocks(mesh);
+    });
+  } catch (err) {
+    console.warn('No se pudo instanciar piedra_G.glb:', err);
   }
 }
 
 export function createAmbiente(scene, sun, onChange = () => {}) {
   const skyTextures = [null, null, null];
   const stars = createStars(scene);
-  const grass = createIchu(scene);
-  replaceIchuWithModel(scene, grass);
+  createInstancedIchu(scene);
+  createInstancedRocks(scene);
   let mode = 0;
 
   async function getOrLoadSkyTexture(idx) {
@@ -230,14 +602,14 @@ export function createAmbiente(scene, sun, onChange = () => {}) {
     if (skyTextures[targetMode]) {
       scene.background = skyTextures[targetMode];
       scene.environment = skyTextures[targetMode];
-      scene.environmentIntensity = [0.45, 0.40, 0.22][targetMode];
+      scene.environmentIntensity = [0.42, 0.38, 0.28][targetMode];
       onChange();
     } else {
       getOrLoadSkyTexture(targetMode).then((tex) => {
         if (mode === targetMode) {
           scene.background = tex;
           scene.environment = tex;
-          scene.environmentIntensity = [0.45, 0.40, 0.22][targetMode];
+          scene.environmentIntensity = [0.42, 0.38, 0.28][targetMode];
           onChange();
         }
       });
@@ -248,28 +620,42 @@ export function createAmbiente(scene, sun, onChange = () => {}) {
     mode = ((value % 3) + 3) % 3;
     applySky(mode);
 
-    const colors = ['#9cb2be', '#b46644', '#0b1322'];
+    // Niebla solo en el horizonte lejano (110 a 280) para máxima nitidez en todo el recinto
+    const fogColors = ['#422a1c', '#887b68', '#090f1d'];
     if (scene.fog) {
-      scene.fog.color.set(colors[mode]);
-      scene.fog.near = [140, 130, 110][mode];
-      scene.fog.far = [520, 480, 420][mode];
+      scene.fog.color.set(fogColors[mode]);
+      scene.fog.near = 110;
+      scene.fog.far = 280;
     }
 
-    sun.color.set(['#fff0ce', '#ff9e56', '#7d9bc6'][mode]);
-    sun.intensity = [2.2, 1.7, 0.35][mode];
-    sun.position.set([-35, -65, -20][mode], [55, 22, -18][mode], [24, -55, 30][mode]);
-    stars.material.opacity = mode === 2 ? 0.82 : 0;
+    // Configuración solar y lunar
+    if (mode === 0) {
+      // Ocaso
+      sun.color.set('#ffbe73');
+      sun.intensity = 3.0;
+      sun.position.set(-48, 18, 30);
+      stars.material.opacity = 0;
+    } else if (mode === 1) {
+      // Día
+      sun.color.set('#fff3df');
+      sun.intensity = 2.8;
+      sun.position.set(35, 65, 25);
+      stars.material.opacity = 0;
+    } else {
+      // Noche visible con luz de luna
+      sun.color.set('#8ab4f8');
+      sun.intensity = 1.45;
+      sun.position.set(-25, 45, -30);
+      stars.material.opacity = 0.88;
+    }
+
     onChange();
     return mode;
   };
 
-  const update = (time) => {
-    const windShader = grass.material.userData.windShader;
-    if (windShader) windShader.uniforms.uWind.value = time;
-    return grass.active;
-  };
+  const update = () => {};
 
-  // Aplica inmediatamente el cielo diurno
+  // Modo inicial: Ocaso (0)
   setTime(0);
 
   return { setTime, update, get mode() { return mode; } };
