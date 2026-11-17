@@ -498,6 +498,18 @@ body::after {
   position: absolute !important;
 }
 
+.story-point[hidden],
+.story-point.is-hidden,
+.hotspot[hidden],
+.hotspot.is-hidden,
+.marker[hidden],
+.marker.is-hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 .story-point::after,
 .hotspot::after,
 .marker::after {

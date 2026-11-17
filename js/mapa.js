@@ -14,19 +14,6 @@ function requestRender() {
   if (animationFrame === null) animationFrame = requestAnimationFrame(animate);
 }
 
-// Paleta de colores temáticos para el outline de cada modelo arqueológico
-export const structureOutlineColors = {
-  puertaSol: { edge: '#ffd54f', hidden: '#6d4c00' },   // Oro Solar resplandeciente
-  puertaLuna: { edge: '#80deea', hidden: '#006064' },  // Plata lunar / Turquesa andino
-  akapana: { edge: '#ff6e40', hidden: '#8c2500' },     // Terracota / Cobre andino
-  chachapuma: { edge: '#8d6e63', hidden: '#3e2723' },  // Basalto volcánico
-  monolito: { edge: '#42a5f5', hidden: '#0d47a1' },    // Lapislázuli / Azul ceremonial (Monolito Ponce)
-  kalasasaya: { edge: '#ffb300', hidden: '#663c00' },  // Ámbar solsticial
-  bennett: { edge: '#ec407a', hidden: '#700836' },     // Arenisca roja / Rubí ceremonial (Monolito Bennett)
-  pumaPunku: { edge: '#ab47bc', hidden: '#3d0875' },   // Amatista cósmica
-  kheriKala: { edge: '#66bb6a', hidden: '#1b5e20' }    // Esmeralda / Verde altiplano
-};
-
 // Elementos de la pantalla de carga
 const loadingScreen = document.querySelector('#loading-screen');
 const loadingBar = document.querySelector('#loading-bar');
@@ -64,15 +51,14 @@ THREE.DefaultLoadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
 THREE.DefaultLoadingManager.onLoad = requestRender;
 
 const container = document.querySelector('#map-canvas');
-const { scene, camera, renderer, controls, sun, outlinePass } = createScene(container);
+const { scene, camera, renderer, controls, sun } = createScene(container);
 
 // Motor de iluminación y atmósfera ceremonial (nitidez nativa sin pases de difuminación/film)
 const cinematic = new CinematicUpgrade({
   scene,
   camera,
   renderer,
-  controls,
-  outlinePass
+  controls
 });
 
 // Inicialización asíncrona del sistema de antorchas ceremoniales tras el primer render
@@ -108,11 +94,9 @@ function startProgressiveLoading() {
       }
     }
     finishLoading();
-    setModelOutline(selected);
   }).catch((err) => {
     console.warn('Carga progresiva completada con avisos:', err);
     finishLoading();
-    setModelOutline(selected);
   });
 }
 
@@ -240,62 +224,6 @@ if (topNarratorBtn && guideDialogueEl) {
   });
 }
 
-// Localizador de objetos en la escena para aplicar el OutlinePass
-function findTargetModel(key) {
-  if (!key || key === 'templo') return null; // Las paredes del Templete nunca se delinean
-  const directNames = [
-    `${key}-modelo-local`,
-    key === 'puertaSol' ? 'puerta-del-sol' : null,
-    key === 'puertaLuna' ? 'puertaLuna-modelo-local' : null,
-    key === 'monolito' ? 'monolito-ponce' : null,
-    key === 'bennett' ? 'monolito-bennett' : null,
-    key === 'kalasasaya' ? 'kalasasaya' : null,
-    key === 'akapana' ? 'akapana' : null,
-    key === 'chachapuma' ? 'chachapuma' : null,
-    key === 'pumaPunku' ? 'puma-punku' : null,
-    key === 'kheriKala' ? 'kheri-kala' : null
-  ].filter(Boolean);
-
-  for (const name of directNames) {
-    const obj = site.getObjectByName(name);
-    if (obj) return obj;
-  }
-  let fallback = null;
-  site.traverse((node) => {
-    if (!fallback && node.userData?.infoKey === key && node !== site) {
-      fallback = node;
-    }
-  });
-  return fallback;
-}
-
-function setModelOutline(key) {
-  if (!outlinePass) return;
-  if (!key || key === 'templo') {
-    outlinePass.selectedObjects = [];
-    outlinePass.enabled = false;
-    requestRender();
-    return;
-  }
-  const colors = structureOutlineColors[key];
-  if (!colors) {
-    outlinePass.selectedObjects = [];
-    outlinePass.enabled = false;
-    requestRender();
-    return;
-  }
-  outlinePass.visibleEdgeColor.set(colors.edge);
-  outlinePass.hiddenEdgeColor.set(colors.hidden);
-  const target = findTargetModel(key);
-  if (target) {
-    outlinePass.selectedObjects = [target];
-  } else {
-    outlinePass.selectedObjects = [];
-  }
-  outlinePass.enabled = Boolean(target);
-  requestRender();
-}
-
 function renderStoryPoints(key) {
   storyLayer.replaceChildren();
   storyPointButtons.length = 0;
@@ -307,10 +235,14 @@ function renderStoryPoints(key) {
     button.title = `${index + 1}. ${point.titulo}`;
     button.setAttribute('aria-label', `${index + 1}. ${point.titulo}: ${point.relato}`);
     button.setAttribute('aria-pressed', 'false');
+    button.hidden = true;
+    button.style.display = 'none';
+    button.style.opacity = '0';
     button.addEventListener('click', () => focusStoryPoint(key, index));
     storyLayer.append(button);
     storyPointButtons.push({ button, point, index });
   });
+  updateStoryPointPositions();
 }
 
 function updateInfoCard(key, point = null) {
@@ -429,7 +361,6 @@ function focusStoryPoint(key, index) {
   const target = new THREE.Vector3(point.posicion.x, point.posicion.y, point.posicion.z);
   const view = point.vista || { x: 0, y: 4, z: 8 };
   moveCameraTo(target, target.clone().add(new THREE.Vector3(view.x, view.y, view.z)));
-  setModelOutline(key);
   updateMinimapHotspotChips();
   drawMinimap();
 }
@@ -444,6 +375,9 @@ addEventListener('resize', updateCachedRect);
 updateCachedRect();
 
 const _projVector = new THREE.Vector3();
+const _camDir = new THREE.Vector3();
+const _toPoint = new THREE.Vector3();
+
 function updateStoryPointPositions() {
   if (storyPointButtons.length === 0) return;
   const rw = cachedRect.width;
@@ -451,16 +385,49 @@ function updateStoryPointPositions() {
   const rl = cachedRect.left;
   const rt = cachedRect.top;
 
+  camera.updateMatrixWorld();
+  camera.getWorldDirection(_camDir);
+
   for (let i = 0; i < storyPointButtons.length; i++) {
     const { button, point } = storyPointButtons[i];
-    _projVector.set(point.posicion.x, point.posicion.y, point.posicion.z).project(camera);
-    const visible = _projVector.z >= -1 && _projVector.z <= 1 && Math.abs(_projVector.x) <= 1.08 && Math.abs(_projVector.y) <= 1.08;
-    if (button.hidden !== !visible) {
-      button.hidden = !visible;
+
+    // 1. Vector desde la cámara hacia el punto 3D
+    _toPoint.set(point.posicion.x, point.posicion.y, point.posicion.z).sub(camera.position);
+
+    // 2. Verificar que el punto esté estrictamente DELANTE del plano de la cámara
+    // Si la cámara gira hacia otro lado o el punto queda a la espalda, se oculta de inmediato.
+    const inFront = _toPoint.dot(_camDir) > 0.1;
+    let visible = false;
+    let px = 0;
+    let py = 0;
+
+    if (inFront) {
+      _projVector.set(point.posicion.x, point.posicion.y, point.posicion.z).project(camera);
+      // Validar profundidad del frustum (near..far) y márgenes de pantalla para evitar puntos congelados en los bordes
+      const inDepth = _projVector.z >= -1 && _projVector.z <= 1;
+      const inScreen = Math.abs(_projVector.x) <= 0.98 && Math.abs(_projVector.y) <= 0.98;
+
+      if (inDepth && inScreen) {
+        px = Math.round(rl + (_projVector.x + 1) * rw / 2);
+        py = Math.round(rt + (1 - _projVector.y) * rh / 2);
+        if (px >= rl + 16 && px <= rl + rw - 16 && py >= rt + 16 && py <= rt + rh - 16) {
+          visible = true;
+        }
+      }
     }
-    if (!visible) continue;
-    const px = Math.round(rl + (_projVector.x + 1) * rw / 2);
-    const py = Math.round(rt + (1 - _projVector.y) * rh / 2);
+
+    if (!visible) {
+      if (!button.hidden) button.hidden = true;
+      button.style.display = 'none';
+      button.style.opacity = '0';
+      button.style.pointerEvents = 'none';
+      continue;
+    }
+
+    if (button.hidden) button.hidden = false;
+    button.style.display = '';
+    button.style.opacity = '1';
+    button.style.pointerEvents = 'auto';
     button.style.left = `${px}px`;
     button.style.top = `${py}px`;
   }
@@ -473,7 +440,6 @@ function showInfo(key, focus = false) {
   selectedStoryIndex = -1;
   updateInfoCard(key);
   renderStoryPoints(key);
-  setModelOutline(key);
   updateMinimapHotspotChips();
   drawMinimap();
 
@@ -764,7 +730,7 @@ addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeDetail();
 });
 
-// Efecto interactivo de hover en la escena para resaltar modelos
+// Efecto interactivo de cursor en la escena al pasar sobre modelos interactivos
 renderer.domElement.addEventListener('pointermove', (event) => {
   if (player.walking) return;
   const rect = renderer.domElement.getBoundingClientRect();
@@ -777,12 +743,16 @@ renderer.domElement.addEventListener('pointermove', (event) => {
   if (hit) {
     let node = hit.object;
     while (node && node !== site && !node.userData.infoKey) node = node.parent;
-    if (node && node.userData.infoKey && structureOutlineColors[node.userData.infoKey]) {
-      setModelOutline(node.userData.infoKey);
+    if (node && node.userData.infoKey && info[node.userData.infoKey]) {
+      renderer.domElement.style.cursor = 'pointer';
       return;
     }
   }
-  setModelOutline(selected);
+  renderer.domElement.style.cursor = 'default';
+});
+
+renderer.domElement.addEventListener('pointerleave', () => {
+  renderer.domElement.style.cursor = 'default';
 });
 
 let pointerStart = null;

@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { createTerrain } from './ambiente.js';
 
 export function createScene(container) {
@@ -60,24 +59,13 @@ export function createScene(container) {
   const ground = createTerrain();
   scene.add(ground);
 
-  // OutlinePass para siluetas de monumentos seleccionados
-  const outlinePass = new OutlinePass(new THREE.Vector2(innerWidth, innerHeight), scene, camera);
-  outlinePass.enabled = false;
-  outlinePass.edgeStrength = 4.5;
-  outlinePass.edgeGlow = 1.0;
-  outlinePass.edgeThickness = 2.0;
-  outlinePass.pulsePeriod = 2.6;
-  outlinePass.visibleEdgeColor.set('#ffd54f');
-  outlinePass.hiddenEdgeColor.set('#6d4c00');
-
   const resize = () => {
     const w = innerWidth, h = innerHeight;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
-    if (outlinePass) outlinePass.resolution.set(w, h);
   };
   addEventListener('resize', resize);
 
-  return { scene, camera, renderer, controls, sun, ground, outlinePass };
+  return { scene, camera, renderer, controls, sun, ground };
 }

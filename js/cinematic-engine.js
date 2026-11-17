@@ -1,7 +1,4 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 export class CinematicUpgrade {
   /**
@@ -10,15 +7,13 @@ export class CinematicUpgrade {
    * @param {THREE.PerspectiveCamera} params.camera
    * @param {THREE.WebGLRenderer} params.renderer
    * @param {Object} [params.controls] - OrbitControls
-   * @param {Object} [params.outlinePass] - OutlinePass para siluetas
    * @param {Object} [params.torchSystem] - Sistema de antorchas ceremoniales
    */
-  constructor({ scene, camera, renderer, controls, outlinePass = null, torchSystem = null }) {
+  constructor({ scene, camera, renderer, controls, torchSystem = null }) {
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
     this.controls = controls;
-    this.outlinePass = outlinePass;
     this.torchSystem = torchSystem;
     this.clock = new THREE.Clock();
 
@@ -66,8 +61,6 @@ export class CinematicUpgrade {
     this.initRenderer();
     this.initControls();
     this.initLightsAndAtmosphere();
-    this.initPostProcessing();
-    this.bindResize();
   }
 
   initRenderer() {
@@ -134,25 +127,6 @@ export class CinematicUpgrade {
     this.applyAtmosphere(this.currentMode);
   }
 
-  initPostProcessing() {
-    // Pipeline limpio sin pases de difuminación (sin FilmPass, sin Bloom, sin DoF blur)
-    const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
-      type: THREE.HalfFloatType,
-      samples: this.renderer.capabilities.isWebGL2 ? 4 : 0
-    });
-    this.composer = new EffectComposer(this.renderer, renderTarget);
-
-    const renderPass = new RenderPass(this.scene, this.camera);
-    this.composer.addPass(renderPass);
-
-    if (this.outlinePass) {
-      this.composer.addPass(this.outlinePass);
-    }
-
-    const outputPass = new OutputPass();
-    this.composer.addPass(outputPass);
-  }
-
   /**
    * Aplica uno de los 3 modos: 'sunset' (Ocaso), 'day' (Día), 'night' (Noche)
    */
@@ -195,28 +169,11 @@ export class CinematicUpgrade {
     return this.applyAtmosphere(order[nextIndex]);
   }
 
-  bindResize() {
-    window.addEventListener('resize', () => {
-      if (!this.composer) return;
-      const w = window.innerWidth, h = window.innerHeight;
-      this.composer.setSize(w, h);
-      if (this.outlinePass) {
-        this.outlinePass.resolution.set(w, h);
-      }
-    });
-  }
-
   render() {
     const elapsed = this.clock.getElapsedTime();
     if (this.torchSystem) {
       this.torchSystem.update(elapsed);
     }
-    // Si hay un monumento seleccionado con OutlinePass, renderizamos vía composer;
-    // en reposo y exploración normal, renderizamos directamente con el renderer para nitidez 100% nativa.
-    if (this.outlinePass && this.outlinePass.enabled && this.outlinePass.selectedObjects && this.outlinePass.selectedObjects.length > 0) {
-      this.composer.render();
-    } else {
-      this.renderer.render(this.scene, this.camera);
-    }
+    this.renderer.render(this.scene, this.camera);
   }
 }
