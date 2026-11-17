@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/" />
+  </url>
+  <url>
+    <loc>https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/recorrido.html</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/recorrido.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/recorrido.html" />
+  </url>
+  <url>
+    <loc>https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/exhibicion.html</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/exhibicion.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/exhibicion.html" />
+  </url>
+  <url>
+    <loc>https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/map.html</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/map.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/map.html" />
+  </url>
+</urlset>

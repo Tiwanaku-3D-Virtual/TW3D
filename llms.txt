@@ -8,9 +8,9 @@ El Museo Virtual 3D de Tiwanaku es una plataforma web inmersiva de código abier
 
 ## Rutas y Experiencias Principales
 
-- [Recorrido Panorámico del Sitio](file:///map.html): Vista interactiva de sobrevuelo y modo caminata en primera persona por el complejo arqueológico al aire libre. Incluye puntos de historia, audio guías narradas y selector de atmósferas.
-- [Sala de Exhibición de Monumentos](file:///exhibicion.html): Galería interactiva 3D con pedestal giratorio, iluminación de museo, fichas técnicas arqueológicas, fotografías de referencia e inspección detallada de esculturas individuales.
-- [Experiencia Principal](file:///index.html): Portal de bienvenida y punto de entrada al museo virtual interactivo.
+- [Recorrido Virtual 3D](https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/): Vista interactiva de sobrevuelo y modo caminata en tercera persona por el complejo arqueológico al aire libre. Incluye puntos de historia, audio guías narradas y selector de atmósferas.
+- [Sala de Exhibición de Monumentos](https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/exhibicion.html): Galería interactiva 3D con pedestal giratorio, iluminación de museo, fichas técnicas arqueológicas, fotografías de referencia e inspección detallada de esculturas individuales.
+- [Catálogo Agéntico para IA](https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/ai-catalog.json): Manifiesto semántico estructurado para consumo por agentes inteligentes y LLMs.
 
 ## Monumentos y Esculturas Modeladas en 3D
 
@@ -60,7 +60,7 @@ El Museo Virtual 3D de Tiwanaku es una plataforma web inmersiva de código abier
   - *Noche*: Atmósfera nocturna bajo el cielo estrellado andino, iluminada por antorchas con pebeteros de fuego volumétrico.
 - **Modos de Cámara**:
   - *Modo Órbita / Panorámico*: Control orbital fluido con mouse o gestos táctiles (zoom con rueda/pellizco, rotación y paneo).
-  - *Modo Caminata (Recorrido Libre)*: Exploración en primera persona usando teclado (W, A, S, D / flechas) o clics en el terreno con control de colisiones y altura del suelo calculada analíticamente.
+  - *Modo Caminata (Recorrido Libre)*: Exploración con avatar en tercera persona usando teclado (W, A, S, D / flechas) o clics en el terreno con control de colisiones y relieve topográfico.
 - **Audio Guía Patrimonial**:
   - Locución histórica y contextual de cada monumento en español, con música ambiental andina y efectos de viento altiplánico bajo demanda (`preload="none"`).
 - **Inspección en Detalle**:
@@ -68,7 +68,7 @@ El Museo Virtual 3D de Tiwanaku es una plataforma web inmersiva de código abier
 
 ## Arquitectura de Software y Optimización WebGL
 
-- **Motor 3D**: Three.js r128+ con `DRACOLoader` (CDN Google/Three.js v1.5.6) para descompresión geométrica en GPU.
-- **Renderizado Responsivo**: Limitación inteligente de pixel ratio (`Math.min(devicePixelRatio, 1.5)`), sombras PCF y optimización de draw calls mediante `InstancedMesh` para vegetación (ichu) y rocas.
-- **Carga Asíncrona Progresiva**: Pipeline no bloqueante con `yieldThread` (cediendo el hilo principal tras la carga de cada activo) y `renderer.compileAsync` para garantizar First Contentful Paint (FCP) ultrarrápido y cero Long Tasks (>50 ms).
+- **Motor 3D**: Three.js con `DRACOLoader` para descompresión geométrica de alta fidelidad.
+- **Renderizado Responsivo**: Limitación inteligente de pixel ratio (`Math.min(devicePixelRatio, 1.5)`), sombras PCF y optimización de draw calls.
+- **Carga Asíncrona Progresiva**: Pipeline no bloqueante con `yieldThread` (cediendo el hilo principal tras la carga de cada activo) y `renderer.compileAsync` para garantizar First Contentful Paint (FCP) ultrarrápido y cero tareas largas (>50 ms).
 - **Accesibilidad y SEO**: Cumplimiento WCAG 2.1 AA con objetivos táctiles de 44x44px mínimos, navegación semántica (`<main>`, `<nav>`, `<aside>`), metadatos Open Graph, Twitter Cards y datos estructurados JSON-LD Schema.org (`TouristAttraction`, `Museum`, `WebSite`).

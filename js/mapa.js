@@ -484,18 +484,21 @@ function openDetail() {
       modalMedia.hidden = false;
     } else {
       modalMedia.hidden = true;
-      modalImg.removeAttribute('src');
+      modalImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 460 260'%3E%3Crect width='460' height='260' fill='%231a1d19'/%3E%3C/svg%3E";
     }
   }
 
+  modal.hidden = false;
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
-  document.querySelector('#modal-close').focus();
+  document.querySelector('#modal-close')?.focus();
 }
 
 function closeDetail() {
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
+  modal.hidden = true;
+  document.querySelector('#btn-detail')?.focus();
 }
 
 const infoToggle = document.querySelector('#btn-toggle-info');
@@ -616,6 +619,8 @@ function applyAppVolume(vol) {
   if (volumeSlider) {
     const pct = Math.round(currentVolumeVal * 100);
     volumeSlider.value = pct;
+    volumeSlider.setAttribute('aria-valuenow', pct);
+    volumeSlider.setAttribute('aria-valuetext', `${pct} por ciento`);
     volumeSlider.style.setProperty('--range-pct', `${pct}%`);
   }
   localStorage.setItem('tiwanaku_audio_vol', String(Math.round(currentVolumeVal * 100)));
@@ -704,6 +709,8 @@ function applyAppLighting(pct) {
   currentLightPct = THREE.MathUtils.clamp(pct, 30, 220);
   if (lightingSlider) {
     lightingSlider.value = currentLightPct;
+    lightingSlider.setAttribute('aria-valuenow', currentLightPct);
+    lightingSlider.setAttribute('aria-valuetext', `${currentLightPct} por ciento`);
     lightingSlider.style.setProperty('--range-pct', `${((currentLightPct - 30) / (220 - 30)) * 100}%`);
   }
   if (lightingValue) {

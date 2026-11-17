@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Tiwanaku 3D — Museo Virtual y Recorrido Arqueológico",
+  "description": "Plataforma web 3D interactiva para la divulgación, investigación y recorrido patrimonial de la ciudad ceremonial de Tiwanaku en el Altiplano boliviano.",
+  "version": "1.0.0",
+  "homepage": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/",
+  "documentation": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/llms.txt",
+  "license": "MIT",
+  "capabilities": {
+    "interactive3d": true,
+    "virtualTour": true,
+    "audioGuides": true,
+    "exhibitionGallery": true
+  },
+  "endpoints": [
+    {
+      "name": "Recorrido Principal 3D",
+      "url": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/index.html",
+      "description": "Recorrido panorámico y modo caminata en tercera persona por el sitio monumental de Tiwanaku."
+    },
+    {
+      "name": "Sala de Exhibición 3D",
+      "url": "https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/exhibicion.html",
+      "description": "Inspección lítica individual de 10 monumentos arqueológicos con pedestal giratorio y audio guías."
+    }
+  ],
+  "monuments": [
+    { "id": "templo", "name": "Templete Semisubterráneo", "period": "500–900 d.C." },
+    { "id": "kalasasaya", "name": "Kalasasaya", "period": "500–900 d.C." },
+    { "id": "puertaSol", "name": "Puerta del Sol", "period": "500–900 d.C." },
+    { "id": "puertaLuna", "name": "Puerta de la Luna", "period": "500–900 d.C." },
+    { "id": "akapana", "name": "Pirámide de Akapana", "period": "400–1000 d.C." },
+    { "id": "chachapuma", "name": "Chachapuma", "period": "Cultura Tiwanaku" },
+    { "id": "pumaPunku", "name": "Puma Punku", "period": "500–1000 d.C." },
+    { "id": "monolito", "name": "Monolito Ponce", "period": "500–900 d.C." },
+    { "id": "bennett", "name": "Monolito Bennett", "period": "Época urbana tardía" },
+    { "id": "kheriKala", "name": "Kheri Kala", "period": "500–900 d.C." }
+  ]
+}

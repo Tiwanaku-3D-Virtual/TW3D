@@ -8,9 +8,13 @@
   <title>Tiwanaku 3D — Sitio arqueológico y Recorrido Virtual</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="map.css">
   <link rel="canonical" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/">
+  <link rel="alternate" hreflang="es" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/">
+  <link rel="alternate" hreflang="x-default" href="https://luisalbertomontecinos.github.io/Tiwanaku_Virtual/">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -60,13 +64,13 @@
     </div>
   </div>
 
-  <main id="map-canvas" aria-label="Sitio arqueológico de Tiwanaku en tres dimensiones"></main>
+  <main id="map-canvas" role="main" aria-label="Sitio arqueológico de Tiwanaku en tres dimensiones"></main>
   <div id="story-points" class="story-points" aria-label="Puntos de historia del modelo seleccionado"></div>
 
   <!-- Contenedor UI principal superpuesto flotante -->
   <div id="ui-overlay" class="ui-overlay">
     <!-- 1. Menú Superior (Navegación) -->
-    <header class="map-header">
+    <header class="map-header" role="banner">
       <!-- Logo (Izquierda) -->
       <a class="brand" href="index.html" aria-label="Volver al recorrido de Tiwanaku">
         <span class="brand-icon">🏛</span>
@@ -77,9 +81,9 @@
       </a>
 
       <!-- Barra Central: Contenedor con forma de píldora -->
-      <nav class="nav-center-pill" aria-label="Navegación principal">
+      <nav class="nav-center-pill" role="navigation" aria-label="Navegación principal">
         <details id="model-menu" class="model-menu">
-          <summary class="glass-pill-btn">Ver modelos</summary>
+          <summary class="glass-pill-btn" aria-haspopup="true" aria-label="Desplegar menú de modelos arqueológicos">Ver modelos</summary>
           <nav class="model-options" aria-label="Elegir modelo para observar">
             <button type="button" data-model-focus="templo">Templete Semisubterráneo</button>
             <button type="button" data-model-focus="kalasasaya">Kalasasaya</button>
@@ -139,7 +143,7 @@
         <button type="button" id="btn-guide-audio" class="gold-button guide-audio-btn" aria-label="Reproducir narración de la guía">
           <span class="audio-icon">▶</span> <span class="audio-label">Escuchar narración de la guía</span>
         </button>
-        <div id="narrator-progress-container" class="narrator-progress-container" hidden>
+        <div id="narrator-progress-container" class="narrator-progress-container" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de narración de la guía" hidden>
           <div id="narrator-progress-bar" class="narrator-progress-bar"></div>
         </div>
       </div>
@@ -147,7 +151,7 @@
 
     <aside id="nearby-card" class="nearby-card" aria-live="polite" hidden>
       <div class="eyebrow">A TU ALREDEDOR</div>
-      <h2 id="nearby-title"></h2>
+      <h2 id="nearby-title">Monumento cercano</h2>
       <p id="nearby-prompt">¿Quieres escuchar la explicación? Pulsa E.</p>
       <div class="nearby-key-hint"><kbd>E</kbd><span>Escuchar o pausar</span></div>
     </aside>
@@ -179,7 +183,7 @@
         </div>
         <div class="audio-slider-row">
           <span class="slider-label">VOL.</span>
-          <input type="range" id="volume-slider" min="0" max="100" value="85" class="gold-range" aria-label="Control de volumen" />
+          <input type="range" id="volume-slider" min="0" max="100" value="85" class="gold-range" role="slider" aria-label="Control de volumen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="85" aria-valuetext="85 por ciento" />
         </div>
         <div id="audio-status-text" class="audio-status-text">Música en pausa · Vol. 85%</div>
         <hr class="audio-divider" />
@@ -187,22 +191,22 @@
           <span class="lighting-label">🔆 ILUMINACIÓN</span>
           <span id="lighting-value" class="lighting-value">100%</span>
         </div>
-        <input type="range" id="lighting-slider" min="30" max="220" value="100" class="gold-range" aria-label="Control de iluminación" />
+        <input type="range" id="lighting-slider" min="30" max="220" value="100" class="gold-range" role="slider" aria-label="Control de iluminación" aria-valuemin="30" aria-valuemax="220" aria-valuenow="100" aria-valuetext="100 por ciento" />
       </aside>
     </div>
 
     <!-- 4. Esquina Inferior Derecha: texto indicativo -->
     <div class="map-footer-hint" id="interaction-help">Órbita con ratón o gestos. Arrastra para girar - Rueda para acercar</div>
   </div>
-  <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
+  <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
     <section class="modal-card">
       <button id="modal-close" class="close-button" aria-label="Cerrar ficha arqueológica">×</button>
       <div class="eyebrow">FICHA ARQUEOLÓGICA</div>
       <div id="modal-media-container" class="modal-card-media" hidden>
-        <img id="modal-image" class="modal-image" alt="Detalle ampliado de la pieza arqueológica" width="460" height="260" loading="lazy" decoding="async" />
+        <img id="modal-image" class="modal-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 460 260'%3E%3Crect width='460' height='260' fill='%231a1d19'/%3E%3C/svg%3E" alt="Detalle ampliado de la pieza arqueológica" width="460" height="260" loading="lazy" decoding="async" />
       </div>
-      <h2 id="modal-title"></h2>
-      <p id="modal-period" class="period"></p>
+      <h2 id="modal-title">Ficha arqueológica</h2>
+      <p id="modal-period" class="period">500–900 d.C.</p>
       <p id="modal-description"></p>
       <dl><dt>Función</dt><dd id="modal-function"></dd><dt>Dato curioso</dt><dd id="modal-curiosity"></dd></dl>
     </section>

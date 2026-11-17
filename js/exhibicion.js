@@ -1263,12 +1263,16 @@ if (volSlider) {
   } else {
     audioPlayer.volume = 0.85;
   }
+  volSlider.setAttribute('aria-valuenow', volSlider.value);
+  volSlider.setAttribute('aria-valuetext', `${volSlider.value} por ciento`);
   volSlider.style.setProperty('--range-pct', `${volSlider.value}%`);
 
   volSlider.addEventListener('input', (e) => {
     const val = parseFloat(e.target.value);
     audioPlayer.volume = val / 100;
     audioPlayer.muted = (val === 0);
+    volSlider.setAttribute('aria-valuenow', val);
+    volSlider.setAttribute('aria-valuetext', `${val} por ciento`);
     volSlider.style.setProperty('--range-pct', `${val}%`);
     localStorage.setItem('tiwanaku_audio_vol', String(val));
     if (muteBtn) muteBtn.textContent = audioPlayer.muted ? '🔇' : '🔊';
@@ -1366,12 +1370,18 @@ if (panelImageWrap) {
     lightboxImg.loading = 'lazy';
     lightboxImg.decoding = 'async';
     if (lightboxCaption) lightboxCaption.textContent = `${config.nombre} · Fotografía Arqueológica`;
+    lightboxModal.hidden = false;
     lightboxModal.classList.add('open');
+    lightboxClose?.focus();
   });
 }
 
 function closeLightbox() {
-  if (lightboxModal) lightboxModal.classList.remove('open');
+  if (lightboxModal) {
+    lightboxModal.classList.remove('open');
+    lightboxModal.hidden = true;
+    panelImageWrap?.focus();
+  }
 }
 
 if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
